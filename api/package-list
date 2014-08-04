@@ -1,0 +1,4 @@
+griffon.plugins.datasource
+griffon.plugins.datasource.exceptions
+griffon.transform
+org.codehaus.griffon.runtime.datasource

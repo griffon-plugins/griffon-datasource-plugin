@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.0.preview.7">
+<meta name="author" content="Andres Almiray">
+<title>Griffon Datasource Plugin</title>
+<link rel="stylesheet" href="./css/style.css">
+<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/font-awesome/3.2.1/css/font-awesome.min.css">
+<link rel="stylesheet" href="./coderay-asciidoctor.css">
+</head>
+<body class="book toc2 toc-left">
+<div id="header">
+<h1>Griffon Datasource Plugin</h1>
+<span id="author" class="author">Andres Almiray</span><br>
+<span id="revnumber">version 1.0.0-SNAPSHOT</span>
+<div id="toc" class="toc2">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_introduction">1. Introduction</a></li>
+<li><a href="#_configuration">2. Build Configuration</a></li>
+<li>
+<ul class="sectlevel2">
+<li><a href="#_gradle">2.1. Gradle</a></li>
+<li>
+<ul class="sectlevel3">
+<li><a href="#_automatic">2.1.1. Automatic</a></li>
+<li><a href="#_manual">2.1.2. Manual</a></li>
+</ul>
+</li>
+<li><a href="#_maven">2.2. Maven</a></li>
+</ul>
+</li>
+<li><a href="#_modules">3. Modules</a></li>
+<li>
+<ul class="sectlevel2">
+<li><a href="#_datasource">3.1. DataSource</a></li>
+</ul>
+</li>
+<li><a href="#_links">4. Links</a></li>
+</ul>
+</div>
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="_introduction"><a class="anchor" href="#_introduction"></a>1. Introduction</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The DataSource plugin enables lightweight access multiple SQL datasources.
+This plugin does NOT provide domain classes nor dynamic finders like GORM does.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuration"><a class="anchor" href="#_configuration"></a>2. Build Configuration</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_gradle"><a class="anchor" href="#_gradle"></a>2.1. Gradle</h3>
+<div class="paragraph">
+<p>You have two options for configuring this plugin: automatic and manual.</p>
+</div>
+<div class="sect3">
+<h4 id="_automatic"><a class="anchor" href="#_automatic"></a>2.1.1. Automatic</h4>
+<div class="paragraph">
+<p>As long as the project has the <code>org.codehaus.griffon.griffon</code> plugin applied to it you
+may include the following snippet in <code>build.gradle</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay nowrap"><code class="groovy language-groovy">dependencies {
+    griffon 'org.codehaus.griffon.plugins:griffon-datasource-plugin:1.0.0-SNAPSHOT'
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>griffon</code> plugin will take care of the rest given its configuration.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_manual"><a class="anchor" href="#_manual"></a>2.1.2. Manual</h4>
+<div class="paragraph">
+<p>You will need to configure any of the following blocks depending on your setup</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay nowrap"><code class="groovy language-groovy">dependencies {
+    compile 'org.codehaus.griffon.plugins:griffon-datasource-core:1.0.0-SNAPSHOT'
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Compile Only</div>
+<div class="content">
+<pre class="CodeRay nowrap"><code class="groovy language-groovy">dependencies {
+    compileOnly 'org.codehaus.griffon.plugins:griffon-datasource-groovy-compile:1.0.0-SNAPSHOT'
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_maven"><a class="anchor" href="#_maven"></a>2.2. Maven</h3>
+<div class="paragraph">
+<p>First configure the <code>griffon-datasource-plugin</code> BOM in your POM file, by placing the following
+snippet before the <code>&lt;build&gt;</code> element</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay nowrap"><code class="xml language-xml"><span class="tag">&lt;dependencyManagement&gt;</span>
+    <span class="tag">&lt;dependencies&gt;</span>
+        <span class="tag">&lt;dependency&gt;</span>
+            <span class="tag">&lt;groupId&gt;</span>org.codehaus.griffon.plugins<span class="tag">&lt;/groupId&gt;</span>
+            <span class="tag">&lt;artifactId&gt;</span>griffon-datasource-plugin<span class="tag">&lt;/artifactId&gt;</span>
+            <span class="tag">&lt;version&gt;</span>1.0.0-SNAPSHOT<span class="tag">&lt;/version&gt;</span>
+            <span class="tag">&lt;type&gt;</span>pom<span class="tag">&lt;/type&gt;</span>
+            <span class="tag">&lt;scope&gt;</span>import<span class="tag">&lt;/scope&gt;</span>
+        <span class="tag">&lt;/dependency&gt;</span>
+    <span class="tag">&lt;/dependencies&gt;</span>
+<span class="tag">&lt;/dependencyManagement&gt;</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Next configure dependencies as required by your particular setup</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay nowrap"><code class="xml language-xml"><span class="tag">&lt;dependency&gt;</span>
+    <span class="tag">&lt;groupId&gt;</span>org.codehaus.griffon.plugins<span class="tag">&lt;/groupId&gt;</span>
+    <span class="tag">&lt;artifactId&gt;</span>griffon-datasource-core<span class="tag">&lt;/artifactId&gt;</span>
+<span class="tag">&lt;/dependency&gt;</span></code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Provided scope</div>
+<div class="content">
+<pre class="CodeRay nowrap"><code class="xml language-xml"><span class="tag">&lt;dependency&gt;</span>
+    <span class="tag">&lt;groupId&gt;</span>org.codehaus.griffon.plugins<span class="tag">&lt;/groupId&gt;</span>
+    <span class="tag">&lt;artifactId&gt;</span>griffon-datasource-groovy-compile<span class="tag">&lt;/artifactId&gt;</span>
+<span class="tag">&lt;/dependency&gt;</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Don&#8217;t forget to configure all <code>-compile</code> dependencies with the maven-surefire-plugin, like so</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay nowrap"><code class="xml language-xml"><span class="tag">&lt;plugin&gt;</span>
+    <span class="tag">&lt;groupId&gt;</span>org.apache.maven.plugins<span class="tag">&lt;/groupId&gt;</span>
+    <span class="tag">&lt;artifactId&gt;</span>maven-surefire-plugin<span class="tag">&lt;/artifactId&gt;</span>
+    <span class="tag">&lt;configuration&gt;</span>
+        <span class="tag">&lt;classpathDependencyExcludes&gt;</span>
+            <span class="tag">&lt;classpathDependencyExclude&gt;</span>
+                org.codehaus.griffon:griffon-datasource-groovy-compile
+            <span class="tag">&lt;/classpathDependencyExclude&gt;</span>
+        <span class="tag">&lt;/classpathDependencyExcludes&gt;</span>
+    <span class="tag">&lt;/configuration&gt;</span>
+<span class="tag">&lt;/plugin&gt;</span></code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_modules"><a class="anchor" href="#_modules"></a>3. Modules</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The following sections display all bindings per module. Use this information to
+successfully override a binding on your own modules or to troubleshoot a module
+binding if the wrong type has been applied by the Griffon runtime.</p>
+</div>
+<div class="sect2">
+<h3 id="_datasource"><a class="anchor" href="#_datasource"></a>3.1. DataSource</h3>
+<div class="paragraph">
+<p>Module name: <code>datasource</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay nowrap"><code class="java language-java">bind(<span class="predefined-type">ResourceBundle</span>.class)
+    .withClassifier(named(<span class="string"><span class="delimiter">&quot;</span><span class="content">datasource</span><span class="delimiter">&quot;</span></span>))
+    .toProvider(<span class="keyword">new</span> ResourceBundleProvider(<span class="string"><span class="delimiter">&quot;</span><span class="content">DataSource</span><span class="delimiter">&quot;</span></span>))
+    .asSingleton();
+
+bind(<span class="predefined-type">Configuration</span>.class)
+    .withClassifier(named(<span class="string"><span class="delimiter">&quot;</span><span class="content">datasource</span><span class="delimiter">&quot;</span></span>))
+    .to(DefaultDataSourceConfiguration.class)
+    .asSingleton();
+
+bind(DataSourceStorage.class)
+    .to(DefaultDataSourceStorage.class)
+    .asSingleton();
+
+bind(DataSourceFactory.class)
+    .to(DefaultDataSourceFactory.class)
+    .asSingleton();
+
+bind(DataSourceHandler.class)
+    .to(DefaultDataSourceHandler.class)
+    .asSingleton();</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_links"><a class="anchor" href="#_links"></a>4. Links</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="api/index.html" target="_blank">Javadoc</a></p>
+</div>
+<div class="paragraph">
+<p><a href="api-src/index.html" target="_blank">API Sources</a></p>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Version 1.0.0-SNAPSHOT<br>
+Last updated 2014-08-04 17:21:14 CEST
+</div>
+</div>
+</body>
+</html>
