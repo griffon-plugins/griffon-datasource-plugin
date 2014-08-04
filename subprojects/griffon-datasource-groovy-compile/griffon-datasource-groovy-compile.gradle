@@ -1,0 +1,7 @@
+apply plugin: 'java'
+apply from: rootProject.file('gradle/code-coverage.gradle')
+
+dependencies {
+    compile project(':griffon-datasource-core')
+    compile "org.codehaus.griffon:griffon-groovy-compile:${griffonVersion}"
+}

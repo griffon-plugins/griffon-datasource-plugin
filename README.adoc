@@ -1,0 +1,15 @@
+= griffon-datasource-plugin
+:version: 1.0.0.SNAPSHOT
+:linkattrs:
+
+image:https://travis-ci.org/griffon-plugins/griffon-datasource-plugin.png?branch=master["Build Status", link="https://travis-ci.org/griffon-plugins/griffon-datasource-plugin"]
+image:https://coveralls.io/repos/griffon-plugins/griffon-datasource-plugin/badge.png["Coverage Status", link="https://coveralls.io/r/griffon-plugins/griffon-datasource-plugin"]
+image:http://img.shields.io/:semver-{version}-red.svg["Semantic Versioning", link="http://semver.org"]
+
+---
+
+The DataSource plugin enables lightweight access multiple SQL datasources.
+This plugin does NOT provide domain classes nor dynamic finders like GORM does.
+
+Refer to the link:http://griffon-plugins.github.io/griffon-datasource-plugin/[plugin guide, window="_blank"] for
+further information on configuration and usage.
