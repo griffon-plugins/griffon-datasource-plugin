@@ -1,17 +1,7 @@
-apply plugin: 'cobertura'
 apply plugin: 'jacoco'
 
-cobertura {
-    coverageFormats = ['html', 'xml']
-    if (project.plugins.hasPlugin('groovy')) {
-        coverageSourceDirs = sourceSets.main.java.srcDirs + sourceSets.main.groovy.srcDirs
-    } else {
-        coverageSourceDirs = sourceSets.main.java.srcDirs
-    }
-}
-
 jacoco {
-    toolVersion = '0.7.1.201405082137'
+    toolVersion = jacocoVersion
 }
 
 jacocoTestReport {
@@ -26,3 +16,5 @@ jacocoTestReport {
         html.enabled = true
     }
 }
+
+jacocoProjects << project

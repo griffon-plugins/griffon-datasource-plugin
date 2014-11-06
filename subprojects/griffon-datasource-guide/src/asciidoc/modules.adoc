@@ -12,7 +12,7 @@ binding if the wrong type has been applied by the Griffon runtime.
 
 == DataSource
 
-Module name: +datasource+
+Module name: `datasource`
 
 [source,java,options="nowrap"]
 ----
