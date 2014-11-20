@@ -23,5 +23,6 @@ import java.sql.SQLException;
  * @author Andres Almiray
  */
 public interface DataSourceCallback<R> {
-    R handle(@Nonnull String dataSourceName, @Nonnull DataSource dataSource) throws SQLException;
+    R handle(@Nonnull String dataSourceName, @Nonnull DataSource dataSource)
+        throws SQLException;
 }

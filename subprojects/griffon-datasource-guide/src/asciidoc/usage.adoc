@@ -1,0 +1,131 @@
+
+[[_Usage]]
+= Usage
+
+The following sections describe how you may use this plugin in an project.
+
+== Configuration
+
+You must create a configuration file named `DataSource` that holds the settings for accessing the database. This file
+follows the same standard configuration mechanism as the application's `Config` file, which means you can define the
+configuration using
+
+ * a properties file
+ * a Java file
+ * a Groovy script
+
+The following example shows the default settings needed to connect to an H2 database taking into account that each
+environment may connect to a different database.
+
+[source,groovy,options="nowrap"]
+.src/main/resources/DataSource.groovy
+----
+include::{path_griffon_datasource_core}/src/test/resources/DataSource.groovy[lines=16..46]
+----
+
+You may configure multiple named datasources (the default datasource is aplty named `default`) as the following snippet
+shows
+
+[source,groovy,options="nowrap"]
+.src/main/resources/DataSource.groovy
+----
+include::{path_griffon_datasource_core}/src/test/resources/DataSource.groovy[lines=48..63]
+----
+
+The plugin's <<_modules, module>> registers a `{api_datasource_handler}` helper class that defines the base contract
+for accessing a datasource and issue SQL queries to it. This class has the following methods
+
+[source,java,options="nowrap"]
+.griffon.plugins.datasource.DataSourceHandler.java
+----
+include::{path_griffon_datasource_core}/src/main/java//griffon/plugins/datasource/DataSourceHandler.java[tags=methods,indent=0]
+----
+
+These method are aware of multiple dataSources. If no dataSourceName is specified when calling them then the default
+dataSource will be selected. You can inject an instance of this class anywhere it's needed using `@Inject`. There are two
+callbacks you may use with this methods: either you work with a `java.sql.DataSource` instance using `{api_datasource_callback}`
+or with a `java.sql.Connection` instance using `{api_connection_callback}`. Both options will come in handy with other plugins
+or APIs that require one instance or the other.
+
+Both callbacks are defined using a functional interface approach, which means you can apply lambda expression if running
+with JDK8+ or closures if running Groovy.
+
+[source,java,options="nowrap"]
+.griffon.plugins.datasource.DataSourceCallback.java
+----
+include::{path_griffon_datasource_core}/src/main/java/griffon/plugins/datasource/DataSourceCallback.java[lines=25..-1]
+----
+
+[source,java,options="nowrap"]
+.griffon.plugins.datasource.ConnectionCallback.java
+----
+include::{path_griffon_datasource_core}/src/main/java/griffon/plugins/datasource/ConnectionCallback.java[lines=26..-1]
+----
+
+== Example
+
+The following is a trivial usage of the `{api_datasource_handler}` paired with http://jdbi.org[JDBI, window="_blank"]
+inside a service
+
+[source,java,options="nowrap"]
+.com.acme.SampleService.java
+----
+package com.acme;
+
+import griffon.core.artifact.GriffonService;
+import griffon.metadata.ArtifactProviderFor;
+import org.codehaus.griffon.runtime.core.artifact.AbstractGriffonService;
+
+import griffon.plugins.datasource.DataSourceHandler;
+import griffon.plugins.datasource.DataSourceCallback;
+import javax.sql.DataSource;
+import java.sql.SQLException;
+
+import org.skife.jdbi.v2.DBI;
+import org.skife.jdbi.v2.Handle;
+import org.skife.jdbi.v2.util.StringMapper;
+
+import javax.annotation.Nonnull;
+import javax.inject.Inject;
+
+@ArtifactProviderFor(GriffonService.class)
+public class SampleService extends AbstractGriffonService {
+    @Inject
+    private DataSourceHandler dataSourceHandler;
+
+    public String getPersonName(final long id) {
+         return dataSourceHandler.withDataSoure(new DataSourceCallback<String>() {
+             public String handle(@Nonnull String dataSourceName, @Nonnull DataSource dataSource)
+                            throws SQLException
+                 try(Handle h = new DBI(dataSource).open()) {
+                    return h.createQuery("SELECT name FROM people WHERE id = :id")
+                        .bind("id", id)
+                        .map(StringMapper.FIRST)
+                        .first();
+                 }
+         });
+    }
+}
+----
+
+== Events
+
+The following events will be triggered by `{api_datasource_handler}`
+
+DataSourceConnectStart(String dataSourceName, Map<String, Object> config):: Triggered before connecting to the dataSource.
+DataSourceConnectEnd(String dataSourceName, Map<String, Object> config, DataSource dataSource):: Triggered after connecting to the dataSource.
+DataSourceDisconnectStart(String dataSourceName, Map<String, Object> config, DataSource dataSource):: Triggered before disconnecting from the dataSource.
+DataSourceDisconnectEnd(String dataSourceName, Map<String, Object> config):: Triggered after disconnecting from the dataSource.
+
+== AST Transformation
+
+You can apply the `{api_datasource_aware}` AST transformation on any class. This injects the behavior of `{api_datasource_handler}`
+into said class
+
+== DSL Descriptors
+
+This plugin provides DSL descriptors for Intellij IDEA and Eclipse (provided you have the Groovy Eclipse plugin installed).
+These descriptors are found inside the `griffon-datasource-groovy-compile-{project-version}.jar`, with locations
+
+ * dsdl/griffon_datasource.dsld
+ * gdsl/griffon_datasource.gdsl

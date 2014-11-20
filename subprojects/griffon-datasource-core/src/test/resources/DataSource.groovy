@@ -24,23 +24,6 @@ dataSource {
     }
 }
 
-dataSources {
-    internal {
-        driverClassName = 'org.h2.Driver'
-        username = 'sa'
-        password = ''
-        schema = false
-        url = 'jdbc:h2:mem:@application.name@-internal'
-    }
-    people {
-        driverClassName = 'org.h2.Driver'
-        username = 'sa'
-        password = ''
-        dbCreate = 'create'
-        url = 'jdbc:h2:mem:@application.name@-people'
-    }
-}
-
 environments {
     development {
         dataSource {
@@ -59,5 +42,22 @@ environments {
             dbCreate = 'skip'
             url = 'jdbc:h2:mem:@application.name@-prod'
         }
+    }
+}
+
+dataSources {
+    internal {
+        driverClassName = 'org.h2.Driver'
+        username = 'sa'
+        password = ''
+        schema = false
+        url = 'jdbc:h2:mem:@application.name@-internal'
+    }
+    people {
+        driverClassName = 'org.h2.Driver'
+        username = 'sa'
+        password = ''
+        dbCreate = 'create'
+        url = 'jdbc:h2:mem:@application.name@-people'
     }
 }

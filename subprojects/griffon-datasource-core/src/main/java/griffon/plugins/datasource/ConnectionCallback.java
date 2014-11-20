@@ -24,5 +24,6 @@ import java.sql.SQLException;
  * @author Andres Almiray
  */
 public interface ConnectionCallback<R> {
-    R handle(@Nonnull String dataSourceName, @Nonnull DataSource dataSource, @Nonnull Connection connection) throws SQLException;
+    R handle(@Nonnull String dataSourceName, @Nonnull DataSource dataSource, @Nonnull Connection connection)
+        throws SQLException;
 }

@@ -1,2 +1,9 @@
 
+:api_datasource_handler: link:api/griffon/plugins/datasource/DataSourceHandler.html[DataSourceHandler, window="_blank"]
+:api_datasource_callback: link:api/griffon/plugins/datasource/DataSourceCallback.html[DataSourceCallback, window="_blank"]
+:api_connection_callback: link:api/griffon/plugins/datasource/ConnectionCallback.html[ConnectionCallback, window="_blank"]
+:api_datasource_aware: link:api/griffon/transform/DataSourceAware.html[@DataSourceAware, window="_blank"]
+
+:path_griffon_datasource_core: {rootdir}/subprojects/griffon-datasource-core
+:path_griffon_datasource_groovy_compile: {rootdir}/subprojects/griffon-datasource-groovy-compile
 

@@ -86,7 +86,7 @@ public class DefaultDataSourceFactory extends AbstractObjectFactory<DataSource> 
         if (!skipSchema) {
             processSchema(config, name, dataSource);
         }
-        event("DataSourceConnectEnd", asList(config, name, dataSource));
+        event("DataSourceConnectEnd", asList(name, config, dataSource));
         return dataSource;
     }
 
@@ -94,7 +94,7 @@ public class DefaultDataSourceFactory extends AbstractObjectFactory<DataSource> 
     public void destroy(@Nonnull String name, @Nonnull DataSource instance) {
         requireNonNull(instance, "Argument 'instance' must not be null");
         Map<String, Object> config = narrowConfig(name);
-        event("DataSourceDisconnectStart", asList(config, name, instance));
+        event("DataSourceDisconnectStart", asList(name, config, instance));
         event("DataSourceDisconnectEnd", asList(name, config));
     }
 
