@@ -4,42 +4,50 @@
 <meta charset="utf-8">
 <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Asciidoctor 1.5.0.preview.7">
+<meta name="generator" content="Asciidoctor 1.5.0">
 <meta name="author" content="Andres Almiray">
-<title>Griffon Datasource Plugin</title>
+<title>Griffon DataSource Plugin</title>
 <link rel="stylesheet" href="./css/style.css">
-<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/font-awesome/3.2.1/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.1.0/css/font-awesome.min.css">
 <link rel="stylesheet" href="./coderay-asciidoctor.css">
 </head>
 <body class="book toc2 toc-left">
 <div id="header">
-<h1>Griffon Datasource Plugin</h1>
+<h1>Griffon DataSource Plugin</h1>
+<div class="details">
 <span id="author" class="author">Andres Almiray</span><br>
-<span id="revnumber">version 1.0.0-SNAPSHOT</span>
+<span id="revnumber">version 1.0.0</span>
+</div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
 <li><a href="#_introduction">1. Introduction</a></li>
-<li><a href="#_configuration">2. Build Configuration</a></li>
-<li>
+<li><a href="#_Usage">2. Usage</a>
 <ul class="sectlevel2">
-<li><a href="#_gradle">2.1. Gradle</a></li>
-<li>
+<li><a href="#_configuration">2.1. Configuration</a></li>
+<li><a href="#_example">2.2. Example</a></li>
+<li><a href="#_events">2.3. Events</a></li>
+<li><a href="#_ast_transformation">2.4. AST Transformation</a></li>
+<li><a href="#_dsl_descriptors">2.5. DSL Descriptors</a></li>
+</ul>
+</li>
+<li><a href="#_configuration">3. Build Configuration</a>
+<ul class="sectlevel2">
+<li><a href="#_gradle">3.1. Gradle</a>
 <ul class="sectlevel3">
-<li><a href="#_automatic">2.1.1. Automatic</a></li>
-<li><a href="#_manual">2.1.2. Manual</a></li>
+<li><a href="#_automatic">3.1.1. Automatic</a></li>
+<li><a href="#_manual">3.1.2. Manual</a></li>
 </ul>
 </li>
-<li><a href="#_maven">2.2. Maven</a></li>
+<li><a href="#_maven">3.2. Maven</a></li>
 </ul>
 </li>
-<li><a href="#_modules">3. Modules</a></li>
-<li>
+<li><a href="#_modules">4. Modules</a>
 <ul class="sectlevel2">
-<li><a href="#_datasource">3.1. DataSource</a></li>
+<li><a href="#_datasource">4.1. DataSource</a></li>
 </ul>
 </li>
-<li><a href="#_links">4. Links</a></li>
+<li><a href="#_links">5. Links</a></li>
 </ul>
 </div>
 </div>
@@ -54,23 +62,270 @@ This plugin does NOT provide domain classes nor dynamic finders like GORM does.<
 </div>
 </div>
 <div class="sect1">
-<h2 id="_configuration"><a class="anchor" href="#_configuration"></a>2. Build Configuration</h2>
+<h2 id="_Usage"><a class="anchor" href="#_Usage"></a>2. Usage</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The following sections describe how you may use this plugin in an project.</p>
+</div>
+<div class="sect2">
+<h3 id="_configuration"><a class="anchor" href="#_configuration"></a>2.1. Configuration</h3>
+<div class="paragraph">
+<p>You must create a configuration file named <code>DataSource</code> that holds the settings for accessing the database. This file
+follows the same standard configuration mechanism as the application&#8217;s <code>Config</code> file, which means you can define the
+configuration using</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>a properties file</p>
+</li>
+<li>
+<p>a Java file</p>
+</li>
+<li>
+<p>a Groovy script</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The following example shows the default settings needed to connect to an H2 database taking into account that each
+environment may connect to a different database.</p>
+</div>
+<div class="listingblock">
+<div class="title">src/main/resources/DataSource.groovy</div>
+<div class="content">
+<pre class="CodeRay highlight nowrap"><code data-lang="groovy">dataSource {
+    driverClassName = <span class="string"><span class="delimiter">'</span><span class="content">org.h2.Driver</span><span class="delimiter">'</span></span>
+    username = <span class="string"><span class="delimiter">'</span><span class="content">sa</span><span class="delimiter">'</span></span>
+    password = <span class="string"><span class="delimiter">'</span><span class="delimiter">'</span></span>
+    pool {
+        maxWait = <span class="integer">60000</span>
+        maxIdle = <span class="integer">5</span>
+        maxActive = <span class="integer">8</span>
+    }
+}
+
+environments {
+    development {
+        dataSource {
+            dbCreate = <span class="string"><span class="delimiter">'</span><span class="content">create</span><span class="delimiter">'</span></span> <span class="comment">// one of ['create', 'skip']</span>
+            url = <span class="string"><span class="delimiter">'</span><span class="content">jdbc:h2:mem:@application.name@-dev</span><span class="delimiter">'</span></span>
+        }
+    }
+    test {
+        dataSource {
+            dbCreate = <span class="string"><span class="delimiter">'</span><span class="content">create</span><span class="delimiter">'</span></span>
+            url = <span class="string"><span class="delimiter">'</span><span class="content">jdbc:h2:mem:@application.name@-test</span><span class="delimiter">'</span></span>
+        }
+    }
+    production {
+        dataSource {
+            dbCreate = <span class="string"><span class="delimiter">'</span><span class="content">skip</span><span class="delimiter">'</span></span>
+            url = <span class="string"><span class="delimiter">'</span><span class="content">jdbc:h2:mem:@application.name@-prod</span><span class="delimiter">'</span></span>
+        }
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You may configure multiple named datasources (the default datasource is aplty named <code>default</code>) as the following snippet
+shows</p>
+</div>
+<div class="listingblock">
+<div class="title">src/main/resources/DataSource.groovy</div>
+<div class="content">
+<pre class="CodeRay highlight nowrap"><code data-lang="groovy">dataSources {
+    internal {
+        driverClassName = <span class="string"><span class="delimiter">'</span><span class="content">org.h2.Driver</span><span class="delimiter">'</span></span>
+        username = <span class="string"><span class="delimiter">'</span><span class="content">sa</span><span class="delimiter">'</span></span>
+        password = <span class="string"><span class="delimiter">'</span><span class="delimiter">'</span></span>
+        schema = <span class="predefined-constant">false</span>
+        url = <span class="string"><span class="delimiter">'</span><span class="content">jdbc:h2:mem:@application.name@-internal</span><span class="delimiter">'</span></span>
+    }
+    people {
+        driverClassName = <span class="string"><span class="delimiter">'</span><span class="content">org.h2.Driver</span><span class="delimiter">'</span></span>
+        username = <span class="string"><span class="delimiter">'</span><span class="content">sa</span><span class="delimiter">'</span></span>
+        password = <span class="string"><span class="delimiter">'</span><span class="delimiter">'</span></span>
+        dbCreate = <span class="string"><span class="delimiter">'</span><span class="content">create</span><span class="delimiter">'</span></span>
+        url = <span class="string"><span class="delimiter">'</span><span class="content">jdbc:h2:mem:@application.name@-people</span><span class="delimiter">'</span></span>
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The plugin&#8217;s <a href="#_modules">module</a> registers a <code><a href="api/griffon/plugins/datasource/DataSourceHandler.html" target="_blank">DataSourceHandler</a></code> helper class that defines the base contract
+for accessing a datasource and issue SQL queries to it. This class has the following methods</p>
+</div>
+<div class="listingblock">
+<div class="title">griffon.plugins.datasource.DataSourceHandler.java</div>
+<div class="content">
+<pre class="CodeRay highlight nowrap"><code data-lang="java"><span class="annotation">@Nullable</span>
+&lt;R&gt; R withDataSource(<span class="annotation">@Nonnull</span> DataSourceCallback&lt;R&gt; callback) <span class="directive">throws</span> RuntimeSQLException;
+
+<span class="annotation">@Nullable</span>
+&lt;R&gt; R withDataSource(<span class="annotation">@Nonnull</span> <span class="predefined-type">String</span> dataSourceName, <span class="annotation">@Nonnull</span> DataSourceCallback&lt;R&gt; callback)
+    <span class="directive">throws</span> RuntimeSQLException;
+
+<span class="annotation">@Nullable</span>
+&lt;R&gt; R withConnection(<span class="annotation">@Nonnull</span> ConnectionCallback&lt;R&gt; callback) <span class="directive">throws</span> RuntimeSQLException;
+
+<span class="annotation">@Nullable</span>
+&lt;R&gt; R withConnection(<span class="annotation">@Nonnull</span> <span class="predefined-type">String</span> dataSourceName, <span class="annotation">@Nonnull</span> ConnectionCallback&lt;R&gt; callback)
+    <span class="directive">throws</span> RuntimeSQLException;
+
+<span class="type">void</span> closeDataSource();
+
+<span class="type">void</span> closeDataSource(<span class="annotation">@Nonnull</span> <span class="predefined-type">String</span> dataSourceName);</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>These method are aware of multiple dataSources. If no dataSourceName is specified when calling them then the default
+dataSource will be selected. You can inject an instance of this class anywhere it&#8217;s needed using <code>@Inject</code>. There are two
+callbacks you may use with this methods: either you work with a <code>java.sql.DataSource</code> instance using <code><a href="api/griffon/plugins/datasource/DataSourceCallback.html" target="_blank">DataSourceCallback</a></code>
+or with a <code>java.sql.Connection</code> instance using <code><a href="api/griffon/plugins/datasource/ConnectionCallback.html" target="_blank">ConnectionCallback</a></code>. Both options will come in handy with other plugins
+or APIs that require one instance or the other.</p>
+</div>
+<div class="paragraph">
+<p>Both callbacks are defined using a functional interface approach, which means you can apply lambda expression if running
+with JDK8+ or closures if running Groovy.</p>
+</div>
+<div class="listingblock">
+<div class="title">griffon.plugins.datasource.DataSourceCallback.java</div>
+<div class="content">
+<pre class="CodeRay highlight nowrap"><code data-lang="java"><span class="directive">public</span> <span class="type">interface</span> <span class="class">DataSourceCallback</span>&lt;R&gt; {
+    R handle(<span class="annotation">@Nonnull</span> <span class="predefined-type">String</span> dataSourceName, <span class="annotation">@Nonnull</span> <span class="predefined-type">DataSource</span> dataSource)
+        <span class="directive">throws</span> <span class="exception">SQLException</span>;
+}</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">griffon.plugins.datasource.ConnectionCallback.java</div>
+<div class="content">
+<pre class="CodeRay highlight nowrap"><code data-lang="java"><span class="directive">public</span> <span class="type">interface</span> <span class="class">ConnectionCallback</span>&lt;R&gt; {
+    R handle(<span class="annotation">@Nonnull</span> <span class="predefined-type">String</span> dataSourceName, <span class="annotation">@Nonnull</span> <span class="predefined-type">DataSource</span> dataSource, <span class="annotation">@Nonnull</span> <span class="predefined-type">Connection</span> connection)
+        <span class="directive">throws</span> <span class="exception">SQLException</span>;
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_example"><a class="anchor" href="#_example"></a>2.2. Example</h3>
+<div class="paragraph">
+<p>The following is a trivial usage of the <code><a href="api/griffon/plugins/datasource/DataSourceHandler.html" target="_blank">DataSourceHandler</a></code> paired with <a href="http://jdbi.org" target="_blank">JDBI</a>
+inside a service</p>
+</div>
+<div class="listingblock">
+<div class="title">com.acme.SampleService.java</div>
+<div class="content">
+<pre class="CodeRay highlight nowrap"><code data-lang="java"><span class="keyword">package</span> <span class="namespace">com.acme</span>;
+
+<span class="keyword">import</span> <span class="include">griffon.core.artifact.GriffonService</span>;
+<span class="keyword">import</span> <span class="include">griffon.metadata.ArtifactProviderFor</span>;
+<span class="keyword">import</span> <span class="include">org.codehaus.griffon.runtime.core.artifact.AbstractGriffonService</span>;
+
+<span class="keyword">import</span> <span class="include">griffon.plugins.datasource.DataSourceHandler</span>;
+<span class="keyword">import</span> <span class="include">griffon.plugins.datasource.DataSourceCallback</span>;
+<span class="keyword">import</span> <span class="include">javax.sql.DataSource</span>;
+<span class="keyword">import</span> <span class="include">java.sql.SQLException</span>;
+
+<span class="keyword">import</span> <span class="include">org.skife.jdbi.v2.DBI</span>;
+<span class="keyword">import</span> <span class="include">org.skife.jdbi.v2.Handle</span>;
+<span class="keyword">import</span> <span class="include">org.skife.jdbi.v2.util.StringMapper</span>;
+
+<span class="keyword">import</span> <span class="include">javax.annotation.Nonnull</span>;
+<span class="keyword">import</span> <span class="include">javax.inject.Inject</span>;
+
+<span class="annotation">@ArtifactProviderFor</span>(GriffonService.class)
+<span class="directive">public</span> <span class="type">class</span> <span class="class">SampleService</span> <span class="directive">extends</span> AbstractGriffonService {
+    <span class="annotation">@Inject</span>
+    <span class="directive">private</span> DataSourceHandler dataSourceHandler;
+
+    <span class="directive">public</span> <span class="predefined-type">String</span> getPersonName(<span class="directive">final</span> <span class="type">long</span> id) {
+         <span class="keyword">return</span> dataSourceHandler.withDataSoure(<span class="keyword">new</span> DataSourceCallback&lt;<span class="predefined-type">String</span>&gt;() {
+             <span class="directive">public</span> <span class="predefined-type">String</span> handle(<span class="annotation">@Nonnull</span> <span class="predefined-type">String</span> dataSourceName, <span class="annotation">@Nonnull</span> <span class="predefined-type">DataSource</span> dataSource)
+                            <span class="directive">throws</span> <span class="exception">SQLException</span>
+                 <span class="keyword">try</span>(Handle h = <span class="keyword">new</span> DBI(dataSource).open()) {
+                    <span class="keyword">return</span> h.createQuery(<span class="string"><span class="delimiter">&quot;</span><span class="content">SELECT name FROM people WHERE id = :id</span><span class="delimiter">&quot;</span></span>)
+                        .bind(<span class="string"><span class="delimiter">&quot;</span><span class="content">id</span><span class="delimiter">&quot;</span></span>, id)
+                        .map(StringMapper.FIRST)
+                        .first();
+                 }
+         });
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_events"><a class="anchor" href="#_events"></a>2.3. Events</h3>
+<div class="paragraph">
+<p>The following events will be triggered by <code><a href="api/griffon/plugins/datasource/DataSourceHandler.html" target="_blank">DataSourceHandler</a></code></p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">DataSourceConnectStart(String dataSourceName, Map&lt;String, Object&gt; config)</dt>
+<dd>
+<p>Triggered before connecting to the dataSource.</p>
+</dd>
+<dt class="hdlist1">DataSourceConnectEnd(String dataSourceName, Map&lt;String, Object&gt; config, DataSource dataSource)</dt>
+<dd>
+<p>Triggered after connecting to the dataSource.</p>
+</dd>
+<dt class="hdlist1">DataSourceDisconnectStart(String dataSourceName, Map&lt;String, Object&gt; config, DataSource dataSource)</dt>
+<dd>
+<p>Triggered before disconnecting from the dataSource.</p>
+</dd>
+<dt class="hdlist1">DataSourceDisconnectEnd(String dataSourceName, Map&lt;String, Object&gt; config)</dt>
+<dd>
+<p>Triggered after disconnecting from the dataSource.</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_ast_transformation"><a class="anchor" href="#_ast_transformation"></a>2.4. AST Transformation</h3>
+<div class="paragraph">
+<p>You can apply the <code><a href="api/griffon/transform/DataSourceAware.html" target="_blank">@DataSourceAware</a></code> AST transformation on any class. This injects the behavior of <code><a href="api/griffon/plugins/datasource/DataSourceHandler.html" target="_blank">DataSourceHandler</a></code>
+into said class</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_dsl_descriptors"><a class="anchor" href="#_dsl_descriptors"></a>2.5. DSL Descriptors</h3>
+<div class="paragraph">
+<p>This plugin provides DSL descriptors for Intellij IDEA and Eclipse (provided you have the Groovy Eclipse plugin installed).
+These descriptors are found inside the <code>griffon-datasource-groovy-compile-1.0.0.jar</code>, with locations</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>dsdl/griffon_datasource.dsld</p>
+</li>
+<li>
+<p>gdsl/griffon_datasource.gdsl</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configuration"><a class="anchor" href="#_configuration"></a>3. Build Configuration</h2>
 <div class="sectionbody">
 <div class="sect2">
-<h3 id="_gradle"><a class="anchor" href="#_gradle"></a>2.1. Gradle</h3>
+<h3 id="_gradle"><a class="anchor" href="#_gradle"></a>3.1. Gradle</h3>
 <div class="paragraph">
 <p>You have two options for configuring this plugin: automatic and manual.</p>
 </div>
 <div class="sect3">
-<h4 id="_automatic"><a class="anchor" href="#_automatic"></a>2.1.1. Automatic</h4>
+<h4 id="_automatic"><a class="anchor" href="#_automatic"></a>3.1.1. Automatic</h4>
 <div class="paragraph">
 <p>As long as the project has the <code>org.codehaus.griffon.griffon</code> plugin applied to it you
 may include the following snippet in <code>build.gradle</code></p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay nowrap"><code class="groovy language-groovy">dependencies {
-    griffon 'org.codehaus.griffon.plugins:griffon-datasource-plugin:1.0.0-SNAPSHOT'
+<pre class="CodeRay highlight nowrap"><code data-lang="groovy">dependencies {
+    griffon 'org.codehaus.griffon.plugins:griffon-datasource-plugin:1.0.0'
 }</code></pre>
 </div>
 </div>
@@ -79,41 +334,41 @@ may include the following snippet in <code>build.gradle</code></p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="_manual"><a class="anchor" href="#_manual"></a>2.1.2. Manual</h4>
+<h4 id="_manual"><a class="anchor" href="#_manual"></a>3.1.2. Manual</h4>
 <div class="paragraph">
 <p>You will need to configure any of the following blocks depending on your setup</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay nowrap"><code class="groovy language-groovy">dependencies {
-    compile 'org.codehaus.griffon.plugins:griffon-datasource-core:1.0.0-SNAPSHOT'
+<pre class="CodeRay highlight nowrap"><code data-lang="groovy">dependencies {
+    compile 'org.codehaus.griffon.plugins:griffon-datasource-core:1.0.0'
 }</code></pre>
 </div>
 </div>
 <div class="listingblock">
 <div class="title">Compile Only</div>
 <div class="content">
-<pre class="CodeRay nowrap"><code class="groovy language-groovy">dependencies {
-    compileOnly 'org.codehaus.griffon.plugins:griffon-datasource-groovy-compile:1.0.0-SNAPSHOT'
+<pre class="CodeRay highlight nowrap"><code data-lang="groovy">dependencies {
+    compileOnly 'org.codehaus.griffon.plugins:griffon-datasource-groovy-compile:1.0.0'
 }</code></pre>
 </div>
 </div>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_maven"><a class="anchor" href="#_maven"></a>2.2. Maven</h3>
+<h3 id="_maven"><a class="anchor" href="#_maven"></a>3.2. Maven</h3>
 <div class="paragraph">
 <p>First configure the <code>griffon-datasource-plugin</code> BOM in your POM file, by placing the following
 snippet before the <code>&lt;build&gt;</code> element</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay nowrap"><code class="xml language-xml"><span class="tag">&lt;dependencyManagement&gt;</span>
+<pre class="CodeRay highlight nowrap"><code data-lang="xml"><span class="tag">&lt;dependencyManagement&gt;</span>
     <span class="tag">&lt;dependencies&gt;</span>
         <span class="tag">&lt;dependency&gt;</span>
             <span class="tag">&lt;groupId&gt;</span>org.codehaus.griffon.plugins<span class="tag">&lt;/groupId&gt;</span>
             <span class="tag">&lt;artifactId&gt;</span>griffon-datasource-plugin<span class="tag">&lt;/artifactId&gt;</span>
-            <span class="tag">&lt;version&gt;</span>1.0.0-SNAPSHOT<span class="tag">&lt;/version&gt;</span>
+            <span class="tag">&lt;version&gt;</span>1.0.0<span class="tag">&lt;/version&gt;</span>
             <span class="tag">&lt;type&gt;</span>pom<span class="tag">&lt;/type&gt;</span>
             <span class="tag">&lt;scope&gt;</span>import<span class="tag">&lt;/scope&gt;</span>
         <span class="tag">&lt;/dependency&gt;</span>
@@ -126,7 +381,7 @@ snippet before the <code>&lt;build&gt;</code> element</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay nowrap"><code class="xml language-xml"><span class="tag">&lt;dependency&gt;</span>
+<pre class="CodeRay highlight nowrap"><code data-lang="xml"><span class="tag">&lt;dependency&gt;</span>
     <span class="tag">&lt;groupId&gt;</span>org.codehaus.griffon.plugins<span class="tag">&lt;/groupId&gt;</span>
     <span class="tag">&lt;artifactId&gt;</span>griffon-datasource-core<span class="tag">&lt;/artifactId&gt;</span>
 <span class="tag">&lt;/dependency&gt;</span></code></pre>
@@ -135,7 +390,7 @@ snippet before the <code>&lt;build&gt;</code> element</p>
 <div class="listingblock">
 <div class="title">Provided scope</div>
 <div class="content">
-<pre class="CodeRay nowrap"><code class="xml language-xml"><span class="tag">&lt;dependency&gt;</span>
+<pre class="CodeRay highlight nowrap"><code data-lang="xml"><span class="tag">&lt;dependency&gt;</span>
     <span class="tag">&lt;groupId&gt;</span>org.codehaus.griffon.plugins<span class="tag">&lt;/groupId&gt;</span>
     <span class="tag">&lt;artifactId&gt;</span>griffon-datasource-groovy-compile<span class="tag">&lt;/artifactId&gt;</span>
 <span class="tag">&lt;/dependency&gt;</span></code></pre>
@@ -146,7 +401,7 @@ snippet before the <code>&lt;build&gt;</code> element</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay nowrap"><code class="xml language-xml"><span class="tag">&lt;plugin&gt;</span>
+<pre class="CodeRay highlight nowrap"><code data-lang="xml"><span class="tag">&lt;plugin&gt;</span>
     <span class="tag">&lt;groupId&gt;</span>org.apache.maven.plugins<span class="tag">&lt;/groupId&gt;</span>
     <span class="tag">&lt;artifactId&gt;</span>maven-surefire-plugin<span class="tag">&lt;/artifactId&gt;</span>
     <span class="tag">&lt;configuration&gt;</span>
@@ -163,7 +418,7 @@ snippet before the <code>&lt;build&gt;</code> element</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_modules"><a class="anchor" href="#_modules"></a>3. Modules</h2>
+<h2 id="_modules"><a class="anchor" href="#_modules"></a>4. Modules</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>The following sections display all bindings per module. Use this information to
@@ -171,13 +426,13 @@ successfully override a binding on your own modules or to troubleshoot a module
 binding if the wrong type has been applied by the Griffon runtime.</p>
 </div>
 <div class="sect2">
-<h3 id="_datasource"><a class="anchor" href="#_datasource"></a>3.1. DataSource</h3>
+<h3 id="_datasource"><a class="anchor" href="#_datasource"></a>4.1. DataSource</h3>
 <div class="paragraph">
 <p>Module name: <code>datasource</code></p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay nowrap"><code class="java language-java">bind(<span class="predefined-type">ResourceBundle</span>.class)
+<pre class="CodeRay highlight nowrap"><code data-lang="java">bind(<span class="predefined-type">ResourceBundle</span>.class)
     .withClassifier(named(<span class="string"><span class="delimiter">&quot;</span><span class="content">datasource</span><span class="delimiter">&quot;</span></span>))
     .toProvider(<span class="keyword">new</span> ResourceBundleProvider(<span class="string"><span class="delimiter">&quot;</span><span class="content">DataSource</span><span class="delimiter">&quot;</span></span>))
     .asSingleton();
@@ -204,7 +459,7 @@ bind(DataSourceHandler.class)
 </div>
 </div>
 <div class="sect1">
-<h2 id="_links"><a class="anchor" href="#_links"></a>4. Links</h2>
+<h2 id="_links"><a class="anchor" href="#_links"></a>5. Links</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p><a href="api/index.html" target="_blank">Javadoc</a></p>
@@ -217,8 +472,8 @@ bind(DataSourceHandler.class)
 </div>
 <div id="footer">
 <div id="footer-text">
-Version 1.0.0-SNAPSHOT<br>
-Last updated 2014-08-04 17:21:14 CEST
+Version 1.0.0<br>
+Last updated 2014-11-20 14:23:59 CET
 </div>
 </div>
 </body>
