@@ -40,8 +40,10 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 
 import static griffon.core.GriffonExceptionHandler.sanitize;
 import static griffon.core.env.Environment.getEnvironmentShortName;
@@ -58,10 +60,31 @@ import static java.util.Objects.requireNonNull;
  */
 public class DefaultDataSourceFactory extends AbstractObjectFactory<DataSource> implements DataSourceFactory {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultDataSourceFactory.class);
+    private static final String ERROR_DATASOURCE_BLANK = "Argument 'dataSourceName' must not be blank";
+    private final Set<String> dataSourceNames = new LinkedHashSet<>();
 
     @Inject
     public DefaultDataSourceFactory(@Nonnull @Named("datasource") Configuration configuration, @Nonnull GriffonApplication application) {
         super(configuration, application);
+        dataSourceNames.add(KEY_DEFAULT);
+
+        if (configuration.containsKey(getPluralKey())) {
+            Map<String, Object> datasources = (Map<String, Object>) configuration.get(getPluralKey());
+            dataSourceNames.addAll(datasources.keySet());
+        }
+    }
+
+    @Nonnull
+    @Override
+    public Set<String> getDataSourceNames() {
+        return dataSourceNames;
+    }
+
+    @Nonnull
+    @Override
+    public Map<String, Object> getConfigurationFor(@Nonnull String dataSourceName) {
+        requireNonBlank(dataSourceName, ERROR_DATASOURCE_BLANK);
+        return narrowConfig(dataSourceName);
     }
 
     @Nonnull
@@ -79,6 +102,7 @@ public class DefaultDataSourceFactory extends AbstractObjectFactory<DataSource> 
     @Nonnull
     @Override
     public DataSource create(@Nonnull String name) {
+        requireNonBlank(name, ERROR_DATASOURCE_BLANK);
         Map<String, Object> config = narrowConfig(name);
         event("DataSourceConnectStart", asList(name, config));
         DataSource dataSource = createDataSource(config, name);
@@ -92,6 +116,7 @@ public class DefaultDataSourceFactory extends AbstractObjectFactory<DataSource> 
 
     @Override
     public void destroy(@Nonnull String name, @Nonnull DataSource instance) {
+        requireNonBlank(name, ERROR_DATASOURCE_BLANK);
         requireNonNull(instance, "Argument 'instance' must not be null");
         Map<String, Object> config = narrowConfig(name);
         event("DataSourceDisconnectStart", asList(name, config, instance));

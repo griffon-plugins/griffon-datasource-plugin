@@ -17,10 +17,18 @@ package griffon.plugins.datasource;
 
 import griffon.core.storage.ObjectFactory;
 
+import javax.annotation.Nonnull;
 import javax.sql.DataSource;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Andres Almiray
  */
 public interface DataSourceFactory extends ObjectFactory<DataSource> {
+    @Nonnull
+    Set<String> getDataSourceNames();
+
+    @Nonnull
+    Map<String, Object> getConfigurationFor(@Nonnull String dataSourceName);
 }

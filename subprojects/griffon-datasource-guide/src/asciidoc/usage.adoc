@@ -23,7 +23,7 @@ environment may connect to a different database.
 include::{path_griffon_datasource_core}/src/test/resources/DataSource.groovy[lines=16..46]
 ----
 
-You may configure multiple named datasources (the default datasource is aplty named `default`) as the following snippet
+You may configure multiple named datasources (the default datasource is aptly named `default`) as the following snippet
 shows
 
 [source,groovy,options="nowrap"]
@@ -31,6 +31,16 @@ shows
 ----
 include::{path_griffon_datasource_core}/src/test/resources/DataSource.groovy[lines=48..63]
 ----
+
+The following properties are optional
+
+[cols="4*",options="header"]
+|===
+
+| Property           | Type    | Default | Description
+| connect_on_startup | boolean | false   | Establishes a connection to the datasource at the end of the `Bootstrap` phase.
+
+|===
 
 The plugin's <<_modules, module>> registers a `{api_datasource_handler}` helper class that defines the base contract
 for accessing a datasource and issue SQL queries to it. This class has the following methods
@@ -43,11 +53,11 @@ include::{path_griffon_datasource_core}/src/main/java//griffon/plugins/datasourc
 
 These method are aware of multiple dataSources. If no dataSourceName is specified when calling them then the default
 dataSource will be selected. You can inject an instance of this class anywhere it's needed using `@Inject`. There are two
-callbacks you may use with this methods: either you work with a `java.sql.DataSource` instance using `{api_datasource_callback}`
+callbacks you may use with these methods: either you work with a `java.sql.DataSource` instance using `{api_datasource_callback}`
 or with a `java.sql.Connection` instance using `{api_connection_callback}`. Both options will come in handy with other plugins
 or APIs that require one instance or the other.
 
-Both callbacks are defined using a functional interface approach, which means you can apply lambda expression if running
+Both callbacks are defined using a functional interface approach, which means you can apply lambda expressions if running
 with JDK8+ or closures if running Groovy.
 
 [source,java,options="nowrap"]
@@ -96,7 +106,7 @@ public class SampleService extends AbstractGriffonService {
     public String getPersonName(final long id) {
          return dataSourceHandler.withDataSoure(new DataSourceCallback<String>() {
              public String handle(@Nonnull String dataSourceName, @Nonnull DataSource dataSource)
-                            throws SQLException
+                            throws SQLException {
                  try(Handle h = new DBI(dataSource).open()) {
                     return h.createQuery("SELECT name FROM people WHERE id = :id")
                         .bind("id", id)
@@ -120,7 +130,7 @@ DataSourceDisconnectEnd(String dataSourceName, Map<String, Object> config):: Tri
 == AST Transformation
 
 You can apply the `{api_datasource_aware}` AST transformation on any class. This injects the behavior of `{api_datasource_handler}`
-into said class
+into said class.
 
 == DSL Descriptors
 

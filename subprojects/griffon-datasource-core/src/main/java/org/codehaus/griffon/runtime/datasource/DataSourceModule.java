@@ -16,6 +16,7 @@
 package org.codehaus.griffon.runtime.datasource;
 
 import griffon.core.Configuration;
+import griffon.core.addon.GriffonAddon;
 import griffon.core.injection.Module;
 import griffon.plugins.datasource.DataSourceFactory;
 import griffon.plugins.datasource.DataSourceHandler;
@@ -58,6 +59,10 @@ public class DataSourceModule extends AbstractModule {
 
         bind(DataSourceHandler.class)
             .to(DefaultDataSourceHandler.class)
+            .asSingleton();
+
+        bind(GriffonAddon.class)
+            .to(DataSourceAddon.class)
             .asSingleton();
         // end::bindings[]
     }
