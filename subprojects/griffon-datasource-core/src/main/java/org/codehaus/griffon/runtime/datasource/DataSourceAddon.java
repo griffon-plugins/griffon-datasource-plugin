@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ public class DataSourceAddon extends AbstractGriffonAddon {
     @Inject
     private DataSourceFactory dataSourceFactory;
 
-    public void onBootstrapEnd(@Nonnull GriffonApplication application) {
+    public void onStartupStart(@Nonnull GriffonApplication application) {
         for (String dataSourceName : dataSourceFactory.getDataSourceNames()) {
             Map<String, Object> config = dataSourceFactory.getConfigurationFor(dataSourceName);
             if (getConfigValueAsBoolean(config, "connect_on_startup", false)) {
