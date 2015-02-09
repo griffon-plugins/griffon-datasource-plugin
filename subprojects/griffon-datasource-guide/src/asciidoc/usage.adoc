@@ -38,7 +38,9 @@ The following properties are optional
 |===
 
 | Property           | Type    | Default | Description
-| connect_on_startup | boolean | false   | Establishes a connection to the datasource at the end of the `Bootstrap` phase.
+| connect_on_startup | boolean | false   | Establishes a connection to the datasource at the beginning of the `Startup` phase.
+| autoclose          | boolean | true    | Automatically close connections after they have been used.
+| jmx                | boolean | true    | Expose the connection pool using JMX.
 
 |===
 
@@ -75,7 +77,7 @@ include::{path_griffon_datasource_core}/src/main/java/griffon/plugins/datasource
 == Example
 
 The following is a trivial usage of the `{api_datasource_handler}` paired with http://jdbi.org[JDBI, window="_blank"]
-inside a service
+inside a Java service
 
 [source,java,options="nowrap"]
 .com.acme.SampleService.java
@@ -104,16 +106,53 @@ public class SampleService extends AbstractGriffonService {
     private DataSourceHandler dataSourceHandler;
 
     public String getPersonName(final long id) {
-         return dataSourceHandler.withDataSoure(new DataSourceCallback<String>() {
+         return dataSourceHandler.withDataSource(new DataSourceCallback<String>() {
              public String handle(@Nonnull String dataSourceName, @Nonnull DataSource dataSource)
                             throws SQLException {
                  try(Handle h = new DBI(dataSource).open()) {
-                    return h.createQuery("SELECT name FROM people WHERE id = :id")
-                        .bind("id", id)
-                        .map(StringMapper.FIRST)
-                        .first();
+                     return h.createQuery("SELECT name FROM people WHERE id = :id")
+                         .bind("id", id)
+                         .map(StringMapper.FIRST)
+                         .first();
                  }
          });
+    }
+}
+----
+
+Here's the Groovy version of it
+
+[source,groovy,options="nowrap"]
+.com.acme.SampleService.groovy
+----
+package com.acme
+
+import griffon.core.artifact.GriffonService
+import griffon.metadata.ArtifactProviderFor
+
+import griffon.plugins.datasource.DataSourceHandler
+import javax.sql.DataSource
+
+import org.skife.jdbi.v2.DBI
+import org.skife.jdbi.v2.Handle
+import org.skife.jdbi.v2.util.StringMapper
+
+import javax.inject.Inject
+
+@ArtifactProviderFor(GriffonService)
+class SampleService {
+    @Inject
+    private DataSourceHandler dataSourceHandler
+
+    String getPersonName(long id) {
+         dataSourceHandler.withDataSource { String dataSourceName, DataSource dataSource ->
+             try(Handle h = new DBI(dataSource).open()) {
+                 h.createQuery('SELECT name FROM people WHERE id = :id')
+                        .bind('id', id)
+                        .map(StringMapper.FIRST)
+                        .first()
+             }
+         }
     }
 }
 ----
@@ -130,7 +169,40 @@ DataSourceDisconnectEnd(String dataSourceName, Map<String, Object> config):: Tri
 == AST Transformation
 
 You can apply the `{api_datasource_aware}` AST transformation on any class. This injects the behavior of `{api_datasource_handler}`
-into said class.
+into said class. The previous Groovy service example can be rewritten as follows
+
+[source,groovy,options="nowrap"]
+.com.acme.SampleService.groovy
+----
+package com.acme
+
+import griffon.core.artifact.GriffonService
+import griffon.metadata.ArtifactProviderFor
+import griffon.transform.DataSourceAware
+
+import javax.sql.DataSource
+
+import org.skife.jdbi.v2.DBI
+import org.skife.jdbi.v2.Handle
+import org.skife.jdbi.v2.util.StringMapper
+
+import javax.inject.Inject
+
+@DataSourceAware
+@ArtifactProviderFor(GriffonService)
+class SampleService {
+    String getPersonName(long id) {
+         withDataSource { String dataSourceName, DataSource dataSource ->
+             try(Handle h = new DBI(dataSource).open()) {
+                 h.createQuery('SELECT name FROM people WHERE id = :id')
+                        .bind('id', id)
+                        .map(StringMapper.FIRST)
+                        .first()
+             }
+         }
+    }
+}
+----
 
 == DSL Descriptors
 

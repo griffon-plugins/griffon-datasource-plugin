@@ -15,7 +15,11 @@
  */
 package org.codehaus.griffon.runtime.datasource;
 
-import griffon.plugins.datasource.*;
+import griffon.plugins.datasource.ConnectionCallback;
+import griffon.plugins.datasource.DataSourceCallback;
+import griffon.plugins.datasource.DataSourceFactory;
+import griffon.plugins.datasource.DataSourceHandler;
+import griffon.plugins.datasource.DataSourceStorage;
 import griffon.plugins.datasource.exceptions.RuntimeSQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,22 +75,34 @@ public class DefaultDataSourceHandler implements DataSourceHandler {
     @Nullable
     @Override
     public <R> R withConnection(@Nonnull ConnectionCallback<R> callback) {
-        return withConnection(DefaultDataSourceFactory.KEY_DEFAULT, callback);
+        return withConnection(DefaultDataSourceFactory.KEY_DEFAULT, true, callback);
     }
 
     @Nullable
     @Override
     public <R> R withConnection(@Nonnull String dataSourceName, @Nonnull ConnectionCallback<R> callback) throws RuntimeSQLException {
+        return withConnection(dataSourceName, true, callback);
+    }
+
+    @Nullable
+    @Override
+    public <R> R withConnection(boolean autoClose, @Nonnull ConnectionCallback<R> callback) throws RuntimeSQLException {
+        return withConnection(DefaultDataSourceFactory.KEY_DEFAULT, autoClose, callback);
+    }
+
+    @Nullable
+    @Override
+    public <R> R withConnection(@Nonnull String dataSourceName, boolean autoClose, @Nonnull ConnectionCallback<R> callback) throws RuntimeSQLException {
         requireNonBlank(dataSourceName, ERROR_DATASOURCE_BLANK);
         requireNonNull(callback, ERROR_CALLBACK_NULL);
 
         DataSource dataSource = getDataSource(dataSourceName);
-        return doWithConnection(dataSourceName, dataSource, callback);
+        return doWithConnection(dataSourceName, dataSource, autoClose, callback);
     }
 
     @Nullable
     @SuppressWarnings("ThrowFromFinallyBlock")
-    public static <R> R doWithConnection(String dataSourceName, DataSource dataSource, ConnectionCallback<R> callback) throws RuntimeSQLException {
+    static <R> R doWithConnection(@Nonnull String dataSourceName, @Nonnull DataSource dataSource, boolean autoClose, @Nonnull ConnectionCallback<R> callback) throws RuntimeSQLException {
         requireNonBlank(dataSourceName, ERROR_DATASOURCE_BLANK);
         requireNonNull(dataSource, ERROR_DATASOURCE_NULL);
         requireNonNull(callback, ERROR_CALLBACK_NULL);
@@ -103,10 +119,12 @@ public class DefaultDataSourceHandler implements DataSourceHandler {
         } catch (SQLException e) {
             throw new RuntimeSQLException(dataSourceName, e);
         } finally {
-            try {
-                connection.close();
-            } catch (SQLException e) {
-                throw new RuntimeSQLException(dataSourceName, e);
+            if (autoClose) {
+                try {
+                    if (connection != null) connection.close();
+                } catch (SQLException e) {
+                    throw new RuntimeSQLException(dataSourceName, e);
+                }
             }
         }
     }

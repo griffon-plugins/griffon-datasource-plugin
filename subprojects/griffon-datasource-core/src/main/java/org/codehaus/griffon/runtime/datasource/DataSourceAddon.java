@@ -16,7 +16,7 @@
 package org.codehaus.griffon.runtime.datasource;
 
 import griffon.core.GriffonApplication;
-import griffon.plugins.datasource.DataSourceCallback;
+import griffon.plugins.datasource.ConnectionCallback;
 import griffon.plugins.datasource.DataSourceFactory;
 import griffon.plugins.datasource.DataSourceHandler;
 import org.codehaus.griffon.runtime.core.addon.AbstractGriffonAddon;
@@ -25,6 +25,7 @@ import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.sql.DataSource;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Map;
 
@@ -46,9 +47,9 @@ public class DataSourceAddon extends AbstractGriffonAddon {
         for (String dataSourceName : dataSourceFactory.getDataSourceNames()) {
             Map<String, Object> config = dataSourceFactory.getConfigurationFor(dataSourceName);
             if (getConfigValueAsBoolean(config, "connect_on_startup", false)) {
-                dataSourceHandler.withDataSource(dataSourceName, new DataSourceCallback<Void>() {
+                dataSourceHandler.withConnection(getConfigValueAsBoolean(config, "autoclose", true), new ConnectionCallback<Void>() {
                     @Override
-                    public Void handle(@Nonnull String dataSourceName, @Nonnull DataSource dataSource) throws SQLException {
+                    public Void handle(@Nonnull String dataSourceName, @Nonnull DataSource dataSource, @Nonnull Connection connection) throws SQLException {
                         return null;
                     }
                 });
