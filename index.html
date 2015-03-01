@@ -16,7 +16,7 @@
 <h1>Griffon DataSource Plugin</h1>
 <div class="details">
 <span id="author" class="author">Andres Almiray</span><br>
-<span id="revnumber">version 1.1.0</span>
+<span id="revnumber">version 1.2.0</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
@@ -175,7 +175,13 @@ shows</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">connect_on_startup</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Establishes a connection to the datasource at the end of the <code>Bootstrap</code> phase.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Establishes a connection to the datasource at the beginning of the <code>Startup</code> phase.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">jmx</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">true</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Expose the connection pool using JMX.</p></td>
 </tr>
 </tbody>
 </table>
@@ -239,7 +245,7 @@ with JDK8+ or closures if running Groovy.</p>
 <h3 id="_example"><a class="anchor" href="#_example"></a>2.2. Example</h3>
 <div class="paragraph">
 <p>The following is a trivial usage of the <code><a href="api/griffon/plugins/datasource/DataSourceHandler.html" target="_blank">DataSourceHandler</a></code> paired with <a href="http://jdbi.org" target="_blank">JDBI</a>
-inside a service</p>
+inside a Java service</p>
 </div>
 <div class="listingblock">
 <div class="title">com.acme.SampleService.java</div>
@@ -268,16 +274,54 @@ inside a service</p>
     <span class="directive">private</span> DataSourceHandler dataSourceHandler;
 
     <span class="directive">public</span> <span class="predefined-type">String</span> getPersonName(<span class="directive">final</span> <span class="type">long</span> id) {
-         <span class="keyword">return</span> dataSourceHandler.withDataSoure(<span class="keyword">new</span> DataSourceCallback&lt;<span class="predefined-type">String</span>&gt;() {
+         <span class="keyword">return</span> dataSourceHandler.withDataSource(<span class="keyword">new</span> DataSourceCallback&lt;<span class="predefined-type">String</span>&gt;() {
              <span class="directive">public</span> <span class="predefined-type">String</span> handle(<span class="annotation">@Nonnull</span> <span class="predefined-type">String</span> dataSourceName, <span class="annotation">@Nonnull</span> <span class="predefined-type">DataSource</span> dataSource)
                             <span class="directive">throws</span> <span class="exception">SQLException</span> {
                  <span class="keyword">try</span>(Handle h = <span class="keyword">new</span> DBI(dataSource).open()) {
-                    <span class="keyword">return</span> h.createQuery(<span class="string"><span class="delimiter">&quot;</span><span class="content">SELECT name FROM people WHERE id = :id</span><span class="delimiter">&quot;</span></span>)
-                        .bind(<span class="string"><span class="delimiter">&quot;</span><span class="content">id</span><span class="delimiter">&quot;</span></span>, id)
-                        .map(StringMapper.FIRST)
-                        .first();
+                     <span class="keyword">return</span> h.createQuery(<span class="string"><span class="delimiter">&quot;</span><span class="content">SELECT name FROM people WHERE id = :id</span><span class="delimiter">&quot;</span></span>)
+                         .bind(<span class="string"><span class="delimiter">&quot;</span><span class="content">id</span><span class="delimiter">&quot;</span></span>, id)
+                         .map(StringMapper.FIRST)
+                         .first();
                  }
          });
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Here&#8217;s the Groovy version of it</p>
+</div>
+<div class="listingblock">
+<div class="title">com.acme.SampleService.groovy</div>
+<div class="content">
+<pre class="CodeRay highlight nowrap"><code data-lang="groovy"><span class="keyword">package</span> com.acme
+
+<span class="keyword">import</span> <span class="include">griffon.core.artifact.GriffonService</span>
+<span class="keyword">import</span> <span class="include">griffon.metadata.ArtifactProviderFor</span>
+
+<span class="keyword">import</span> <span class="include">griffon.plugins.datasource.DataSourceHandler</span>
+<span class="keyword">import</span> <span class="include">javax.sql.DataSource</span>
+
+<span class="keyword">import</span> <span class="include">org.skife.jdbi.v2.DBI</span>
+<span class="keyword">import</span> <span class="include">org.skife.jdbi.v2.Handle</span>
+<span class="keyword">import</span> <span class="include">org.skife.jdbi.v2.util.StringMapper</span>
+
+<span class="keyword">import</span> <span class="include">javax.inject.Inject</span>
+
+<span class="annotation">@ArtifactProviderFor</span>(GriffonService)
+<span class="type">class</span> <span class="class">SampleService</span> {
+    <span class="annotation">@Inject</span>
+    <span class="directive">private</span> DataSourceHandler dataSourceHandler
+
+    <span class="predefined-type">String</span> getPersonName(<span class="type">long</span> id) {
+         dataSourceHandler.withDataSource { <span class="predefined-type">String</span> dataSourceName, <span class="predefined-type">DataSource</span> dataSource -&gt;
+             <span class="keyword">try</span>(Handle h = <span class="keyword">new</span> DBI(dataSource).open()) {
+                 h.createQuery(<span class="string"><span class="delimiter">'</span><span class="content">SELECT name FROM people WHERE id = :id</span><span class="delimiter">'</span></span>)
+                        .bind(<span class="string"><span class="delimiter">'</span><span class="content">id</span><span class="delimiter">'</span></span>, id)
+                        .map(StringMapper.FIRST)
+                        .first()
+             }
+         }
     }
 }</code></pre>
 </div>
@@ -313,14 +357,47 @@ inside a service</p>
 <h3 id="_ast_transformation"><a class="anchor" href="#_ast_transformation"></a>2.4. AST Transformation</h3>
 <div class="paragraph">
 <p>You can apply the <code><a href="api/griffon/transform/DataSourceAware.html" target="_blank">@DataSourceAware</a></code> AST transformation on any class. This injects the behavior of <code><a href="api/griffon/plugins/datasource/DataSourceHandler.html" target="_blank">DataSourceHandler</a></code>
-into said class.</p>
+into said class. The previous Groovy service example can be rewritten as follows</p>
+</div>
+<div class="listingblock">
+<div class="title">com.acme.SampleService.groovy</div>
+<div class="content">
+<pre class="CodeRay highlight nowrap"><code data-lang="groovy"><span class="keyword">package</span> com.acme
+
+<span class="keyword">import</span> <span class="include">griffon.core.artifact.GriffonService</span>
+<span class="keyword">import</span> <span class="include">griffon.metadata.ArtifactProviderFor</span>
+<span class="keyword">import</span> <span class="include">griffon.transform.DataSourceAware</span>
+
+<span class="keyword">import</span> <span class="include">javax.sql.DataSource</span>
+
+<span class="keyword">import</span> <span class="include">org.skife.jdbi.v2.DBI</span>
+<span class="keyword">import</span> <span class="include">org.skife.jdbi.v2.Handle</span>
+<span class="keyword">import</span> <span class="include">org.skife.jdbi.v2.util.StringMapper</span>
+
+<span class="keyword">import</span> <span class="include">javax.inject.Inject</span>
+
+<span class="annotation">@DataSourceAware</span>
+<span class="annotation">@ArtifactProviderFor</span>(GriffonService)
+<span class="type">class</span> <span class="class">SampleService</span> {
+    <span class="predefined-type">String</span> getPersonName(<span class="type">long</span> id) {
+         withDataSource { <span class="predefined-type">String</span> dataSourceName, <span class="predefined-type">DataSource</span> dataSource -&gt;
+             <span class="keyword">try</span>(Handle h = <span class="keyword">new</span> DBI(dataSource).open()) {
+                 h.createQuery(<span class="string"><span class="delimiter">'</span><span class="content">SELECT name FROM people WHERE id = :id</span><span class="delimiter">'</span></span>)
+                        .bind(<span class="string"><span class="delimiter">'</span><span class="content">id</span><span class="delimiter">'</span></span>, id)
+                        .map(StringMapper.FIRST)
+                        .first()
+             }
+         }
+    }
+}</code></pre>
+</div>
 </div>
 </div>
 <div class="sect2">
 <h3 id="_dsl_descriptors"><a class="anchor" href="#_dsl_descriptors"></a>2.5. DSL Descriptors</h3>
 <div class="paragraph">
 <p>This plugin provides DSL descriptors for Intellij IDEA and Eclipse (provided you have the Groovy Eclipse plugin installed).
-These descriptors are found inside the <code>griffon-datasource-groovy-compile-1.1.0.jar</code>, with locations</p>
+These descriptors are found inside the <code>griffon-datasource-groovy-compile-1.2.0.jar</code>, with locations</p>
 </div>
 <div class="ulist">
 <ul>
@@ -352,7 +429,7 @@ may include the following snippet in <code>build.gradle</code></p>
 <div class="listingblock">
 <div class="content">
 <pre class="CodeRay highlight nowrap"><code data-lang="groovy">dependencies {
-    griffon 'org.codehaus.griffon.plugins:griffon-datasource-plugin:1.1.0'
+    griffon 'org.codehaus.griffon.plugins:griffon-datasource-plugin:1.2.0'
 }</code></pre>
 </div>
 </div>
@@ -368,7 +445,7 @@ may include the following snippet in <code>build.gradle</code></p>
 <div class="listingblock">
 <div class="content">
 <pre class="CodeRay highlight nowrap"><code data-lang="groovy">dependencies {
-    compile 'org.codehaus.griffon.plugins:griffon-datasource-core:1.1.0'
+    compile 'org.codehaus.griffon.plugins:griffon-datasource-core:1.2.0'
 }</code></pre>
 </div>
 </div>
@@ -376,7 +453,7 @@ may include the following snippet in <code>build.gradle</code></p>
 <div class="title">Compile Only</div>
 <div class="content">
 <pre class="CodeRay highlight nowrap"><code data-lang="groovy">dependencies {
-    compileOnly 'org.codehaus.griffon.plugins:griffon-datasource-groovy-compile:1.1.0'
+    compileOnly 'org.codehaus.griffon.plugins:griffon-datasource-groovy-compile:1.2.0'
 }</code></pre>
 </div>
 </div>
@@ -395,7 +472,7 @@ snippet before the <code>&lt;build&gt;</code> element</p>
         <span class="tag">&lt;dependency&gt;</span>
             <span class="tag">&lt;groupId&gt;</span>org.codehaus.griffon.plugins<span class="tag">&lt;/groupId&gt;</span>
             <span class="tag">&lt;artifactId&gt;</span>griffon-datasource-plugin<span class="tag">&lt;/artifactId&gt;</span>
-            <span class="tag">&lt;version&gt;</span>1.1.0<span class="tag">&lt;/version&gt;</span>
+            <span class="tag">&lt;version&gt;</span>1.2.0<span class="tag">&lt;/version&gt;</span>
             <span class="tag">&lt;type&gt;</span>pom<span class="tag">&lt;/type&gt;</span>
             <span class="tag">&lt;scope&gt;</span>import<span class="tag">&lt;/scope&gt;</span>
         <span class="tag">&lt;/dependency&gt;</span>
@@ -503,8 +580,8 @@ bind(GriffonAddon.class)
 </div>
 <div id="footer">
 <div id="footer-text">
-Version 1.1.0<br>
-Last updated 2014-11-20 07:27:26 CST
+Version 1.2.0<br>
+Last updated 2014-12-19 17:55:40 CET
 </div>
 </div>
 </body>
