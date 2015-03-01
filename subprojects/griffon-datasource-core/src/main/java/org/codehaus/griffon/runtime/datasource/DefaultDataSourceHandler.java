@@ -75,34 +75,22 @@ public class DefaultDataSourceHandler implements DataSourceHandler {
     @Nullable
     @Override
     public <R> R withConnection(@Nonnull ConnectionCallback<R> callback) {
-        return withConnection(DefaultDataSourceFactory.KEY_DEFAULT, true, callback);
+        return withConnection(DefaultDataSourceFactory.KEY_DEFAULT, callback);
     }
 
     @Nullable
     @Override
     public <R> R withConnection(@Nonnull String dataSourceName, @Nonnull ConnectionCallback<R> callback) throws RuntimeSQLException {
-        return withConnection(dataSourceName, true, callback);
-    }
-
-    @Nullable
-    @Override
-    public <R> R withConnection(boolean autoClose, @Nonnull ConnectionCallback<R> callback) throws RuntimeSQLException {
-        return withConnection(DefaultDataSourceFactory.KEY_DEFAULT, autoClose, callback);
-    }
-
-    @Nullable
-    @Override
-    public <R> R withConnection(@Nonnull String dataSourceName, boolean autoClose, @Nonnull ConnectionCallback<R> callback) throws RuntimeSQLException {
         requireNonBlank(dataSourceName, ERROR_DATASOURCE_BLANK);
         requireNonNull(callback, ERROR_CALLBACK_NULL);
 
         DataSource dataSource = getDataSource(dataSourceName);
-        return doWithConnection(dataSourceName, dataSource, autoClose, callback);
+        return doWithConnection(dataSourceName, dataSource, callback);
     }
 
     @Nullable
     @SuppressWarnings("ThrowFromFinallyBlock")
-    static <R> R doWithConnection(@Nonnull String dataSourceName, @Nonnull DataSource dataSource, boolean autoClose, @Nonnull ConnectionCallback<R> callback) throws RuntimeSQLException {
+    static <R> R doWithConnection(@Nonnull String dataSourceName, @Nonnull DataSource dataSource, @Nonnull ConnectionCallback<R> callback) throws RuntimeSQLException {
         requireNonBlank(dataSourceName, ERROR_DATASOURCE_BLANK);
         requireNonNull(dataSource, ERROR_DATASOURCE_NULL);
         requireNonNull(callback, ERROR_CALLBACK_NULL);
@@ -119,12 +107,10 @@ public class DefaultDataSourceHandler implements DataSourceHandler {
         } catch (SQLException e) {
             throw new RuntimeSQLException(dataSourceName, e);
         } finally {
-            if (autoClose) {
-                try {
-                    if (connection != null) connection.close();
-                } catch (SQLException e) {
-                    throw new RuntimeSQLException(dataSourceName, e);
-                }
+            try {
+                if (connection != null) connection.close();
+            } catch (SQLException e) {
+                throw new RuntimeSQLException(dataSourceName, e);
             }
         }
     }

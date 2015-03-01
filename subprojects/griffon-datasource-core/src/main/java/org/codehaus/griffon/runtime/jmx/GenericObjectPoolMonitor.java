@@ -13,31 +13,46 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.codehaus.griffon.runtime.datasource;
+package org.codehaus.griffon.runtime.jmx;
 
+import griffon.core.env.Metadata;
 import griffon.exceptions.GriffonException;
 import org.apache.commons.pool.impl.GenericObjectPool;
+import org.codehaus.griffon.runtime.monitor.AbstractMBeanRegistration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * @author Andres Almiray
+ * @since 1.2.0
  */
-public class DataSourceMonitor implements DataSourceMonitorMXBean {
-    private static final Logger LOG = LoggerFactory.getLogger(DataSourceMonitor.class);
+public class GenericObjectPoolMonitor extends AbstractMBeanRegistration implements GenericObjectPoolMonitorMXBean {
+    private static final Logger LOG = LoggerFactory.getLogger(GenericObjectPoolMonitor.class);
 
     private GenericObjectPool delegate;
     private final String name;
 
-    public DataSourceMonitor(@Nonnull GenericObjectPool delegate, @Nonnull String name) {
-        this.delegate = delegate;
+    public GenericObjectPoolMonitor(@Nonnull Metadata metadata, @Nonnull GenericObjectPool delegate, @Nonnull String name) {
+        super(metadata);
+        this.delegate = requireNonNull(delegate, "Argument 'delegate' must not be null");
         this.name = name;
     }
 
-    public void destroy() {
+    @Override
+    public ObjectName preRegister(MBeanServer server, ObjectName name) throws Exception {
+        return new ObjectName("griffon.plugins.datasource:type=ConnectionPool,application=" + metadata.getApplicationName() + ",name=" + this.name);
+    }
+
+    @Override
+    public void postDeregister() {
         delegate = null;
+        super.postDeregister();
     }
 
     @Override

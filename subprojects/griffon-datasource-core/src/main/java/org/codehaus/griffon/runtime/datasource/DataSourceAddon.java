@@ -16,10 +16,14 @@
 package org.codehaus.griffon.runtime.datasource;
 
 import griffon.core.GriffonApplication;
+import griffon.core.env.Metadata;
 import griffon.plugins.datasource.ConnectionCallback;
 import griffon.plugins.datasource.DataSourceFactory;
 import griffon.plugins.datasource.DataSourceHandler;
+import griffon.plugins.datasource.DataSourceStorage;
+import griffon.plugins.monitor.MBeanManager;
 import org.codehaus.griffon.runtime.core.addon.AbstractGriffonAddon;
+import org.codehaus.griffon.runtime.jmx.DataSourceStorageMonitor;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
@@ -43,11 +47,25 @@ public class DataSourceAddon extends AbstractGriffonAddon {
     @Inject
     private DataSourceFactory dataSourceFactory;
 
+    @Inject
+    private DataSourceStorage dataSourceStorage;
+
+    @Inject
+    private MBeanManager mbeanManager;
+
+    @Inject
+    private Metadata metadata;
+
+    @Override
+    public void init(@Nonnull GriffonApplication application) {
+        mbeanManager.registerMBean(new DataSourceStorageMonitor(metadata, dataSourceStorage));
+    }
+
     public void onStartupStart(@Nonnull GriffonApplication application) {
         for (String dataSourceName : dataSourceFactory.getDataSourceNames()) {
             Map<String, Object> config = dataSourceFactory.getConfigurationFor(dataSourceName);
             if (getConfigValueAsBoolean(config, "connect_on_startup", false)) {
-                dataSourceHandler.withConnection(getConfigValueAsBoolean(config, "autoclose", true), new ConnectionCallback<Void>() {
+                dataSourceHandler.withConnection(new ConnectionCallback<Void>() {
                     @Override
                     public Void handle(@Nonnull String dataSourceName, @Nonnull DataSource dataSource, @Nonnull Connection connection) throws SQLException {
                         return null;

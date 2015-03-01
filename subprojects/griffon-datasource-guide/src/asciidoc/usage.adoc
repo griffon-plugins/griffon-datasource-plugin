@@ -39,7 +39,6 @@ The following properties are optional
 
 | Property           | Type    | Default | Description
 | connect_on_startup | boolean | false   | Establishes a connection to the datasource at the beginning of the `Startup` phase.
-| autoclose          | boolean | true    | Automatically close connections after they have been used.
 | jmx                | boolean | true    | Expose the connection pool using JMX.
 
 |===

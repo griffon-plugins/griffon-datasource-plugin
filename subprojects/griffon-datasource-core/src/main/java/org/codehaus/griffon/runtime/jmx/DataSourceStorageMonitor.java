@@ -13,33 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.codehaus.griffon.runtime.datasource;
+package org.codehaus.griffon.runtime.jmx;
+
+import griffon.core.env.Metadata;
+import griffon.plugins.datasource.DataSourceStorage;
+import org.codehaus.griffon.runtime.monitor.AbstractObjectStorageMonitor;
+
+import javax.annotation.Nonnull;
+import javax.sql.DataSource;
 
 /**
  * @author Andres Almiray
+ * @since 1.2.0
  */
-public interface DataSourceMonitorMXBean {
-    int getNumIdle();
+public class DataSourceStorageMonitor extends AbstractObjectStorageMonitor<DataSource> implements DataSourceStorageMonitorMXBean {
+    public DataSourceStorageMonitor(@Nonnull Metadata metadata, @Nonnull DataSourceStorage delegate) {
+        super(metadata, delegate);
+    }
 
-    int getNumActive();
-
-    int getMaxActive();
-
-    int getMaxIdle();
-
-    long getMaxWait();
-
-    int getMinIdle();
-
-    void setMaxActive(int m);
-
-    void setMaxIdle(int m);
-
-    void setMaxWait(long m);
-
-    void setMinIdle(int m);
-
-    void clear();
-
-    void evict();
+    @Override
+    protected String getStorageName() {
+        return "datasource";
+    }
 }

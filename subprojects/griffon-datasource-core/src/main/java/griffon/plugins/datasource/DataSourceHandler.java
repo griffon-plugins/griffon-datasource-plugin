@@ -39,13 +39,6 @@ public interface DataSourceHandler {
     <R> R withConnection(@Nonnull String dataSourceName, @Nonnull ConnectionCallback<R> callback)
         throws RuntimeSQLException;
 
-    @Nullable
-    <R> R withConnection(boolean autoClose, @Nonnull ConnectionCallback<R> callback) throws RuntimeSQLException;
-
-    @Nullable
-    <R> R withConnection(@Nonnull String dataSourceName, boolean autoClose, @Nonnull ConnectionCallback<R> callback)
-        throws RuntimeSQLException;
-
     void closeDataSource();
 
     void closeDataSource(@Nonnull String dataSourceName);

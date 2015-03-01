@@ -78,14 +78,6 @@ class DataSourceAwareASTTransformationSpec extends Specification {
                  return null
             }
             @Override
-            public <R> R withConnection(boolean autoClose, @Nonnull ConnectionCallback<R> callback) throws RuntimeSQLException {
-                return null
-            }
-            @Override
-            public <R> R withConnection(@Nonnull String dataSourceName, boolean autoClose, @Nonnull ConnectionCallback<R> callback) throws RuntimeSQLException {
-                 return null
-            }
-            @Override
             void closeDataSource(){}
             @Override
             void closeDataSource(@Nonnull String dataSourceName){}

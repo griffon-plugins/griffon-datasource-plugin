@@ -17,10 +17,12 @@ package org.codehaus.griffon.runtime.datasource;
 
 import griffon.core.Configuration;
 import griffon.core.GriffonApplication;
+import griffon.core.env.Environment;
 import griffon.core.env.Metadata;
 import griffon.exceptions.GriffonException;
 import griffon.plugins.datasource.ConnectionCallback;
 import griffon.plugins.datasource.DataSourceFactory;
+import griffon.plugins.monitor.MBeanManager;
 import griffon.util.GriffonClassUtils;
 import org.apache.commons.dbcp.ConnectionFactory;
 import org.apache.commons.dbcp.DriverManagerConnectionFactory;
@@ -29,23 +31,19 @@ import org.apache.commons.dbcp.PoolingDataSource;
 import org.apache.commons.pool.ObjectPool;
 import org.apache.commons.pool.impl.GenericObjectPool;
 import org.codehaus.griffon.runtime.core.storage.AbstractObjectFactory;
+import org.codehaus.griffon.runtime.jmx.GenericObjectPoolMonitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.management.InstanceAlreadyExistsException;
-import javax.management.InstanceNotFoundException;
-import javax.management.MBeanRegistrationException;
-import javax.management.MalformedObjectNameException;
-import javax.management.NotCompliantMBeanException;
-import javax.management.ObjectName;
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -60,7 +58,6 @@ import static griffon.util.ConfigUtils.getConfigValueAsBoolean;
 import static griffon.util.ConfigUtils.getConfigValueAsString;
 import static griffon.util.GriffonNameUtils.isBlank;
 import static griffon.util.GriffonNameUtils.requireNonBlank;
-import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 
@@ -71,6 +68,15 @@ public class DefaultDataSourceFactory extends AbstractObjectFactory<DataSource> 
     private static final Logger LOG = LoggerFactory.getLogger(DefaultDataSourceFactory.class);
     private static final String ERROR_DATASOURCE_BLANK = "Argument 'dataSourceName' must not be blank";
     private final Set<String> dataSourceNames = new LinkedHashSet<>();
+
+    @Inject
+    private MBeanManager mBeanManager;
+
+    @Inject
+    private Metadata metadata;
+
+    @Inject
+    private Environment environment;
 
     @Inject
     public DefaultDataSourceFactory(@Nonnull @Named("datasource") Configuration configuration, @Nonnull GriffonApplication application) {
@@ -116,14 +122,15 @@ public class DefaultDataSourceFactory extends AbstractObjectFactory<DataSource> 
 
         event("DataSourceConnectStart", asList(name, config));
 
-        OpenPoolingDataSource dataSource = createDataSource(config, name);
+        DataSource dataSource = createDataSource(config, name);
         boolean skipSchema = getConfigValueAsBoolean(config, "schema", false);
         if (!skipSchema) {
             processSchema(config, name, dataSource);
         }
 
         if (getConfigValueAsBoolean(config, "jmx", true)) {
-            registerMBean(name, dataSource);
+            dataSource = new JMXAwareDataSource(dataSource);
+            registerMBeans(name, (JMXAwareDataSource) dataSource);
         }
 
         event("DataSourceConnectEnd", asList(name, config, dataSource));
@@ -140,35 +147,15 @@ public class DefaultDataSourceFactory extends AbstractObjectFactory<DataSource> 
         event("DataSourceDisconnectStart", asList(name, config, instance));
 
         if (getConfigValueAsBoolean(config, "jmx", true)) {
-            unregisterMBean(name);
+            ((JMXAwareDataSource) instance).disposeMBeans();
         }
 
         event("DataSourceDisconnectEnd", asList(name, config));
     }
 
-    private void registerMBean(@Nonnull String name, @Nonnull OpenPoolingDataSource dataSource) {
-        try {
-            ObjectName objectName = objectNameFor(name);
-            getPlatformMBeanServer().registerMBean(new DataSourceMonitor(dataSource.getPool(), name), objectName);
-        } catch (MalformedObjectNameException | NotCompliantMBeanException | MBeanRegistrationException | InstanceAlreadyExistsException e) {
-            throw new GriffonException("An unexpected error occurred when registering a JMX bean", e);
-        }
-    }
-
-    private void unregisterMBean(@Nonnull String name) {
-        try {
-            ObjectName objectName = objectNameFor(name);
-            if (getPlatformMBeanServer().isRegistered(objectName)) {
-                getPlatformMBeanServer().unregisterMBean(objectName);
-            }
-        } catch (MalformedObjectNameException | InstanceNotFoundException | MBeanRegistrationException e) {
-            throw new GriffonException("An unexpected error occurred when unregistering a JMX bean", e);
-        }
-    }
-
-    private ObjectName objectNameFor(String name) throws MalformedObjectNameException {
-        String applicationName = Metadata.getCurrent().getApplicationName();
-        return new ObjectName("griffon.plugins.datasource:type=ConnectionPool,application=" + applicationName + ",name=" + name);
+    private void registerMBeans(@Nonnull String name, @Nonnull JMXAwareDataSource dataSource) {
+        GenericObjectPoolMonitor poolMonitor = new GenericObjectPoolMonitor(metadata, ((OpenPoolingDataSource) dataSource.getDelegate()).getPool(), name);
+        dataSource.addObjectName(mBeanManager.registerMBean(poolMonitor, false).getCanonicalName());
     }
 
     @Nonnull
@@ -208,7 +195,7 @@ public class DefaultDataSourceFactory extends AbstractObjectFactory<DataSource> 
             return;
         }
 
-        String env = getEnvironmentShortName();
+        String env = getEnvironmentShortName(environment);
         URL ddl = null;
         for (String schemaName : asList(name + "-schema-" + env + ".ddl", name + "-schema.ddl", "schema-" + env + ".ddl", "schema.ddl")) {
             ddl = getApplication().getResourceHandler().getResourceAsURL(schemaName);
@@ -226,8 +213,7 @@ public class DefaultDataSourceFactory extends AbstractObjectFactory<DataSource> 
 
         LOG.info("Initializing schema on '{}'", name);
 
-        boolean autoclose = getConfigValueAsBoolean(config, "autoclose", true);
-        DefaultDataSourceHandler.doWithConnection(name, dataSource, autoclose, new ConnectionCallback<Object>() {
+        DefaultDataSourceHandler.doWithConnection(name, dataSource, new ConnectionCallback<Object>() {
             @Override
             public Object handle(@Nonnull String dataSourceName, @Nonnull DataSource ds, @Nonnull Connection connection) {
                 try (Scanner sc = new Scanner(url.openStream()); Statement statement = connection.createStatement()) {
@@ -256,6 +242,11 @@ public class DefaultDataSourceFactory extends AbstractObjectFactory<DataSource> 
 
         public GenericObjectPool getPool() {
             return (GenericObjectPool) _pool;
+        }
+
+        @Override
+        public java.util.logging.Logger getParentLogger() throws SQLFeatureNotSupportedException {
+            throw new SQLFeatureNotSupportedException();
         }
     }
 }
