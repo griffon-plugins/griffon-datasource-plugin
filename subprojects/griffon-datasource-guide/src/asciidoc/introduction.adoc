@@ -5,3 +5,5 @@
 The DataSource plugin enables lightweight access multiple SQL datasources.
 This plugin does NOT provide domain classes nor dynamic finders like GORM does.
 
+Griffon version: {griffon-version}
+
