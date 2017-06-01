@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,9 @@
  */
 package org.codehaus.griffon.runtime.datasource;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import com.zaxxer.hikari.pool.HikariPool;
 import griffon.core.Configuration;
 import griffon.core.GriffonApplication;
 import griffon.core.env.Environment;
@@ -24,14 +27,8 @@ import griffon.plugins.datasource.ConnectionCallback;
 import griffon.plugins.datasource.DataSourceFactory;
 import griffon.plugins.monitor.MBeanManager;
 import griffon.util.GriffonClassUtils;
-import org.apache.commons.dbcp.ConnectionFactory;
-import org.apache.commons.dbcp.DriverManagerConnectionFactory;
-import org.apache.commons.dbcp.PoolableConnectionFactory;
-import org.apache.commons.dbcp.PoolingDataSource;
-import org.apache.commons.pool.ObjectPool;
-import org.apache.commons.pool.impl.GenericObjectPool;
 import org.codehaus.griffon.runtime.core.storage.AbstractObjectFactory;
-import org.codehaus.griffon.runtime.jmx.GenericObjectPoolMonitor;
+import org.codehaus.griffon.runtime.jmx.HikariPoolMonitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +40,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -56,7 +52,6 @@ import static griffon.core.env.Environment.getEnvironmentShortName;
 import static griffon.util.ConfigUtils.getConfigValue;
 import static griffon.util.ConfigUtils.getConfigValueAsBoolean;
 import static griffon.util.ConfigUtils.getConfigValueAsString;
-import static griffon.util.GriffonNameUtils.isBlank;
 import static griffon.util.GriffonNameUtils.requireNonBlank;
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
@@ -154,13 +149,13 @@ public class DefaultDataSourceFactory extends AbstractObjectFactory<DataSource> 
     }
 
     private void registerMBeans(@Nonnull String name, @Nonnull JMXAwareDataSource dataSource) {
-        GenericObjectPoolMonitor poolMonitor = new GenericObjectPoolMonitor(metadata, ((OpenPoolingDataSource) dataSource.getDelegate()).getPool(), name);
+        HikariPoolMonitor poolMonitor = new HikariPoolMonitor(metadata, ((OpenHikariDataSource) dataSource.getDelegate()).getPool(), name);
         dataSource.addObjectName(mBeanManager.registerMBean(poolMonitor, false).getCanonicalName());
     }
 
     @Nonnull
     @SuppressWarnings("ConstantConditions")
-    private OpenPoolingDataSource createDataSource(@Nonnull Map<String, Object> config, @Nonnull String name) {
+    private DataSource createDataSource(@Nonnull Map<String, Object> config, @Nonnull String name) {
         String driverClassName = getConfigValueAsString(config, "driverClassName", "");
         requireNonBlank(driverClassName, "Configuration for " + name + ".driverClassName must not be blank");
         String url = getConfigValueAsString(config, "url", "");
@@ -172,21 +167,18 @@ public class DefaultDataSourceFactory extends AbstractObjectFactory<DataSource> 
             throw new GriffonException(e);
         }
 
-        GenericObjectPool<DataSource> connectionPool = new GenericObjectPool<>(null);
-        Map<String, Object> pool = getConfigValue(config, "pool", Collections.<String, Object>emptyMap());
-        GriffonClassUtils.setPropertiesNoException(connectionPool, pool);
-
         String username = getConfigValueAsString(config, "username", "");
         String password = getConfigValueAsString(config, "password", "");
-        ConnectionFactory connectionFactory = null;
-        if (isBlank(username)) {
-            connectionFactory = new DriverManagerConnectionFactory(url, null);
-        } else {
-            connectionFactory = new DriverManagerConnectionFactory(url, username, password);
-        }
 
-        new PoolableConnectionFactory(connectionFactory, connectionPool, null, null, false, true);
-        return new OpenPoolingDataSource(connectionPool);
+        HikariConfig hikariConfig = new HikariConfig();
+        hikariConfig.setJdbcUrl(url);
+        hikariConfig.setDriverClassName(driverClassName);
+        hikariConfig.setUsername(username);
+        hikariConfig.setPassword(password);
+        Map<String, Object> pool = getConfigValue(config, "pool", Collections.<String, Object>emptyMap());
+        GriffonClassUtils.setPropertiesNoException(hikariConfig, pool);
+
+        return new OpenHikariDataSource(hikariConfig);
     }
 
     private void processSchema(@Nonnull Map<String, Object> config, @Nonnull String name, @Nonnull DataSource dataSource) {
@@ -232,21 +224,16 @@ public class DefaultDataSourceFactory extends AbstractObjectFactory<DataSource> 
         });
     }
 
-    private static class OpenPoolingDataSource extends PoolingDataSource {
-        public OpenPoolingDataSource() {
+    private static class OpenHikariDataSource extends HikariDataSource {
+        public OpenHikariDataSource() {
         }
 
-        public OpenPoolingDataSource(ObjectPool pool) {
-            super(pool);
+        public OpenHikariDataSource(HikariConfig configuration) {
+            super(configuration);
         }
 
-        public GenericObjectPool getPool() {
-            return (GenericObjectPool) _pool;
-        }
-
-        @Override
-        public java.util.logging.Logger getParentLogger() throws SQLFeatureNotSupportedException {
-            throw new SQLFeatureNotSupportedException();
+        public HikariPool getPool() {
+            return (HikariPool) GriffonClassUtils.getFieldValue(this, "pool");
         }
     }
 }

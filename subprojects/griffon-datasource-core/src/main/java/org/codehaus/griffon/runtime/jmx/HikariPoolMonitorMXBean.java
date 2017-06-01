@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors.
+ * Copyright 2014-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,30 +17,20 @@ package org.codehaus.griffon.runtime.jmx;
 
 /**
  * @author Andres Almiray
- * @since 1.2.0
+ * @since 2.0.0
  */
-public interface GenericObjectPoolMonitorMXBean {
-    int getNumIdle();
+public interface HikariPoolMonitorMXBean {
+    int getIdleConnections();
 
-    int getNumActive();
+    int getActiveConnections();
 
-    int getMaxActive();
+    int getTotalConnections();
 
-    int getMaxIdle();
+    int getThreadsAwaitingConnection();
 
-    long getMaxWait();
+    void softEvictConnections();
 
-    int getMinIdle();
+    void suspendPool();
 
-    void setMaxActive(int m);
-
-    void setMaxIdle(int m);
-
-    void setMaxWait(long m);
-
-    void setMinIdle(int m);
-
-    void clear();
-
-    void evict();
+    void resumePool();
 }

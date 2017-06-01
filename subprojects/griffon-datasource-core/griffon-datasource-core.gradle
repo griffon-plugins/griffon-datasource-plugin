@@ -5,17 +5,17 @@ griffon {
     disableDependencyResolution = false
     includeGroovyDependencies = false
     version = rootProject.griffonVersion
+    applicationProject = false
 }
 
 apply from: rootProject.file('gradle/code-coverage.gradle')
 
 dependencies {
-    compile 'org.codehaus.griffon.plugins:griffon-monitor-core:1.1.0'
+    compile 'org.codehaus.griffon.plugins:griffon-monitor-core:2.0.0'
 
-    compile('commons-dbcp:commons-dbcp:1.4') { transitive = false }
-    compile('commons-pool:commons-pool:1.6') { transitive = false }
+    compile "com.zaxxer:HikariCP:$hikaricpVersion"
 
-    testRuntime('com.h2database:h2:1.4.193') { transitive = false }
+    testRuntime("com.h2database:h2:$h2Version") { transitive = false }
     testRuntime "org.slf4j:slf4j-simple:$slf4jVersion"
 
     testRuntime "org.codehaus.griffon:griffon-guice:${griffon.version}"

@@ -67,7 +67,7 @@ task apiDocs(type: Javadoc, dependsOn: copyDocs) {
     options.footer      = project.javadocFooter
     options.links       = ['http://www.slf4j.org/apidocs/',
                            'http://junit.org/junit4/javadoc/latest/',
-                           'http://docs.oracle.com/javase/7/docs/api/',
+                           'http://docs.oracle.com/javase/8/docs/api/',
                            'http://aalmiray.github.io/jsr-305/apidocs/',
                            'http://javax-inject.github.io/javax-inject/api/',
                            'http://griffon-framework.org/guide/2.9.0/api/']

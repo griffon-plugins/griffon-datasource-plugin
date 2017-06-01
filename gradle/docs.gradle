@@ -11,10 +11,10 @@ javadoc {
     options.footer      = javadocFooter
     options.links       = ['http://www.slf4j.org/apidocs/',
                            'http://junit.org/junit4/javadoc/latest/',
-                           'http://docs.oracle.com/javase/7/docs/api/',
+                           'http://docs.oracle.com/javase/8/docs/api/',
                            'http://aalmiray.github.io/jsr-305/apidocs/',
                            'http://javax-inject.github.io/javax-inject/api/',
-                           'http://griffon-framework.org/guide/latest/api/']
+                           "http://griffon-framework.org/guide/${griffonVersion}/api".toString()]
 
     doLast { task ->
         copy {
@@ -40,9 +40,9 @@ if (plugins.hasPlugin('groovy')) {
         footer = project.javadocFooter
         includePrivate = false
         link 'http://www.slf4j.org/apidocs/', 'org.slf4j.'
-        link 'http://docs.oracle.com/javase/7/docs/api/', 'java.', 'org.xml.', 'javax.', 'org.w3c.'
+        link 'http://docs.oracle.com/javase/8/docs/api/', 'java.', 'org.xml.', 'javax.', 'org.w3c.'
         link 'http://aalmiray.github.io/jsr-305/apidocs/', 'javax.annotation.'
-        link 'http://griffon-framework.org/guide/latest/api/', 'griffon.', 'org.codehaus.griffon.'
+        link "http://griffon-framework.org/guide/${griffonVersion}/api".toString(), 'griffon.', 'org.codehaus.griffon.'
         link 'http://junit.org/junit4/javadoc/latest/', 'org.junit.', 'junit.'
         link 'http://javax-inject.github.io/javax-inject/api/', 'javax.inject.'
 
