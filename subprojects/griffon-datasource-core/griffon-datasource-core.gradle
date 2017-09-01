@@ -11,7 +11,7 @@ griffon {
 apply from: rootProject.file('gradle/code-coverage.gradle')
 
 dependencies {
-    compile 'org.codehaus.griffon.plugins:griffon-monitor-core:2.0.0'
+    compile 'org.codehaus.griffon.plugins:griffon-monitor-core:2.1.0'
 
     compile "com.zaxxer:HikariCP:$hikaricpVersion"
 
