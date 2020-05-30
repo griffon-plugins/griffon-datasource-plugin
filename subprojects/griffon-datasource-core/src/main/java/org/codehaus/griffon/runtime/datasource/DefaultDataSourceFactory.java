@@ -1,11 +1,13 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Copyright 2014-2020 The author and/or original authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,28 +19,29 @@ package org.codehaus.griffon.runtime.datasource;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import com.zaxxer.hikari.pool.HikariPool;
+import griffon.annotations.core.Nonnull;
 import griffon.core.Configuration;
 import griffon.core.GriffonApplication;
 import griffon.core.env.Environment;
 import griffon.core.env.Metadata;
 import griffon.exceptions.GriffonException;
-import griffon.plugins.datasource.ConnectionCallback;
 import griffon.plugins.datasource.DataSourceFactory;
+import griffon.plugins.datasource.events.DataSourceConnectEndEvent;
+import griffon.plugins.datasource.events.DataSourceConnectStartEvent;
+import griffon.plugins.datasource.events.DataSourceDisconnectEndEvent;
+import griffon.plugins.datasource.events.DataSourceDisconnectStartEvent;
 import griffon.plugins.monitor.MBeanManager;
 import griffon.util.GriffonClassUtils;
 import org.codehaus.griffon.runtime.core.storage.AbstractObjectFactory;
-import org.codehaus.griffon.runtime.jmx.HikariPoolMonitor;
+import org.codehaus.griffon.runtime.datasource.monitor.HikariPoolMonitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.net.URL;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collections;
@@ -115,7 +118,7 @@ public class DefaultDataSourceFactory extends AbstractObjectFactory<DataSource> 
         requireNonBlank(name, ERROR_DATASOURCE_BLANK);
         Map<String, Object> config = narrowConfig(name);
 
-        event("DataSourceConnectStart", asList(name, config));
+        event(DataSourceConnectStartEvent.of(name, config));
 
         DataSource dataSource = createDataSource(config, name);
         boolean skipSchema = getConfigValueAsBoolean(config, "schema", false);
@@ -128,7 +131,7 @@ public class DefaultDataSourceFactory extends AbstractObjectFactory<DataSource> 
             registerMBeans(name, (JMXAwareDataSource) dataSource);
         }
 
-        event("DataSourceConnectEnd", asList(name, config, dataSource));
+        event(DataSourceConnectEndEvent.of(name, config, dataSource));
 
         return dataSource;
     }
@@ -139,18 +142,24 @@ public class DefaultDataSourceFactory extends AbstractObjectFactory<DataSource> 
         requireNonNull(instance, "Argument 'instance' must not be null");
         Map<String, Object> config = narrowConfig(name);
 
-        event("DataSourceDisconnectStart", asList(name, config, instance));
+        event(DataSourceDisconnectStartEvent.of(name, config, instance));
 
         if (getConfigValueAsBoolean(config, "jmx", true)) {
-            ((JMXAwareDataSource) instance).disposeMBeans();
+            unregisterMBeans((JMXAwareDataSource) instance);
         }
 
-        event("DataSourceDisconnectEnd", asList(name, config));
+        event(DataSourceDisconnectEndEvent.of(name, config));
     }
 
     private void registerMBeans(@Nonnull String name, @Nonnull JMXAwareDataSource dataSource) {
-        HikariPoolMonitor poolMonitor = new HikariPoolMonitor(metadata, ((OpenHikariDataSource) dataSource.getDelegate()).getPool(), name);
-        dataSource.addObjectName(mBeanManager.registerMBean(poolMonitor, false).getCanonicalName());
+        HikariPoolMonitor poolMonitor = new HikariPoolMonitor(metadata, ((HikariDataSource) dataSource.getDelegate()).getHikariPoolMXBean(), name);
+        dataSource.addObjectName(mBeanManager.registerMBean(poolMonitor, true).getCanonicalName());
+    }
+
+    private void unregisterMBeans(@Nonnull JMXAwareDataSource dataSource) {
+        for (String objectName : dataSource.getObjectNames()) {
+            mBeanManager.unregisterMBean(objectName);
+        }
     }
 
     @Nonnull
@@ -178,7 +187,7 @@ public class DefaultDataSourceFactory extends AbstractObjectFactory<DataSource> 
         Map<String, Object> pool = getConfigValue(config, "pool", Collections.<String, Object>emptyMap());
         GriffonClassUtils.setPropertiesNoException(hikariConfig, pool);
 
-        return new OpenHikariDataSource(hikariConfig);
+        return new HikariDataSource(hikariConfig);
     }
 
     private void processSchema(@Nonnull Map<String, Object> config, @Nonnull String name, @Nonnull DataSource dataSource) {
@@ -205,35 +214,19 @@ public class DefaultDataSourceFactory extends AbstractObjectFactory<DataSource> 
 
         LOG.info("Initializing schema on '{}'", name);
 
-        DefaultDataSourceHandler.doWithConnection(name, dataSource, new ConnectionCallback<Object>() {
-            @Override
-            public Object handle(@Nonnull String dataSourceName, @Nonnull DataSource ds, @Nonnull Connection connection) {
-                try (Scanner sc = new Scanner(url.openStream()); Statement statement = connection.createStatement()) {
-                    sc.useDelimiter(";");
-                    while (sc.hasNext()) {
-                        String line = sc.next().trim();
-                        statement.execute(line);
-                    }
-                } catch (IOException | SQLException e) {
-                    LOG.error("An error occurred when reading schema DDL from " + url, sanitize(e));
-                    return null;
+        DefaultDataSourceHandler.doWithConnection(name, dataSource, (dataSourceName, ds, connection) -> {
+            try (Scanner sc = new Scanner(url.openStream()); Statement statement = connection.createStatement()) {
+                sc.useDelimiter(";");
+                while (sc.hasNext()) {
+                    String line = sc.next().trim();
+                    statement.execute(line);
                 }
-
+            } catch (IOException | SQLException e) {
+                LOG.error("An error occurred when reading schema DDL from " + url, sanitize(e));
                 return null;
             }
+
+            return null;
         });
-    }
-
-    private static class OpenHikariDataSource extends HikariDataSource {
-        public OpenHikariDataSource() {
-        }
-
-        public OpenHikariDataSource(HikariConfig configuration) {
-            super(configuration);
-        }
-
-        public HikariPool getPool() {
-            return (HikariPool) GriffonClassUtils.getFieldValue(this, "pool");
-        }
     }
 }

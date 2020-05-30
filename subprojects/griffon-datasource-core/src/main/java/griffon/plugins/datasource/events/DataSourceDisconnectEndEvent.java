@@ -15,35 +15,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package griffon.plugins.datasource.exceptions;
+package griffon.plugins.datasource.events;
 
 import griffon.annotations.core.Nonnull;
-import griffon.exceptions.GriffonException;
+import griffon.core.event.Event;
 
-import java.sql.SQLException;
+import java.util.Map;
 
 import static griffon.util.GriffonNameUtils.requireNonBlank;
 import static java.util.Objects.requireNonNull;
 
 /**
  * @author Andres Almiray
+ * @since 3.0.0
  */
-public class RuntimeSQLException extends GriffonException {
-    private final String dataSourceName;
+public class DataSourceDisconnectEndEvent extends Event {
+    private final String name;
+    private final Map<String, Object> config;
 
-    public RuntimeSQLException(@Nonnull String dataSourceName, @Nonnull SQLException sqle) {
-        super(format(dataSourceName), requireNonNull(sqle, "sqle"));
-        this.dataSourceName = dataSourceName;
+    public DataSourceDisconnectEndEvent(@Nonnull String name, @Nonnull Map<String, Object> config) {
+        this.name = requireNonBlank(name, "Argument 'name' must not be blank");
+        this.config = requireNonNull(config, "Argument 'config' must not be null");
     }
 
     @Nonnull
-    private static String format(@Nonnull String dataSourceName) {
-        requireNonBlank(dataSourceName, "dataSourceName");
-        return "An error occurred when executing a statement on dataSource '" + dataSourceName + "'";
+    public String getName() {
+        return name;
     }
 
     @Nonnull
-    public String getDataSourceName() {
-        return dataSourceName;
+    public Map<String, Object> getConfig() {
+        return config;
+    }
+
+    @Nonnull
+    public static DataSourceDisconnectEndEvent of(@Nonnull String name, @Nonnull Map<String, Object> config) {
+        return new DataSourceDisconnectEndEvent(name, config);
     }
 }

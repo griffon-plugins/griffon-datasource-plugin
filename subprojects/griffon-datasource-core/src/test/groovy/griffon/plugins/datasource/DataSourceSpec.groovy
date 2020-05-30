@@ -1,11 +1,13 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Copyright 2014-2020 The author and/or original authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,13 +19,18 @@ package griffon.plugins.datasource
 
 import griffon.core.CallableWithArgs
 import griffon.core.GriffonApplication
-import griffon.core.test.GriffonUnitRule
+import griffon.plugins.datasource.events.DataSourceConnectEndEvent
+import griffon.plugins.datasource.events.DataSourceConnectStartEvent
+import griffon.plugins.datasource.events.DataSourceDisconnectEndEvent
+import griffon.plugins.datasource.events.DataSourceDisconnectStartEvent
 import griffon.plugins.datasource.exceptions.RuntimeSQLException
+import griffon.test.core.GriffonUnitRule
 import groovy.sql.Sql
 import org.junit.Rule
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import javax.application.event.EventHandler
 import javax.inject.Inject
 import javax.sql.DataSource
 import java.sql.Connection
@@ -43,18 +50,38 @@ class DataSourceSpec extends Specification {
     @Inject
     private GriffonApplication application
 
+    private class TestEventHandler {
+        List<String> events = []
+
+        @EventHandler
+        void handleDataSourceConnectStartEvent(DataSourceConnectStartEvent event) {
+            events << event.class.simpleName
+        }
+
+        @EventHandler
+        void handleDataSourceConnectEndEvent(DataSourceConnectEndEvent event) {
+            events << event.class.simpleName
+        }
+
+        @EventHandler
+        void handleDataSourceDisconnectStartEvent(DataSourceDisconnectStartEvent event) {
+            events << event.class.simpleName
+        }
+
+        @EventHandler
+        void handleDataSourceDisconnectEndEvent(DataSourceDisconnectEndEvent event) {
+            events << event.class.simpleName
+        }
+    }
+
     void 'Open and close default dataSource'() {
         given:
         List eventNames = [
-            'DataSourceConnectStart', 'DataSourceConnectEnd',
-            'DataSourceDisconnectStart', 'DataSourceDisconnectEnd'
+            'DataSourceConnectStartEvent', 'DataSourceConnectEndEvent',
+            'DataSourceDisconnectStartEvent', 'DataSourceDisconnectEndEvent'
         ]
-        List events = []
-        eventNames.each { name ->
-            application.eventRouter.addEventListener(name, { Object... args ->
-                events << [name: name, args: args]
-            } as CallableWithArgs)
-        }
+        TestEventHandler testEventHandler = new TestEventHandler()
+        application.eventRouter.subscribe(testEventHandler)
 
         when:
         dataSourceHandler.withDataSource { String dataSourceName, DataSource dataSource ->
@@ -65,8 +92,8 @@ class DataSourceSpec extends Specification {
         dataSourceHandler.closeDataSource()
 
         then:
-        events.size() == 4
-        events.name == eventNames
+        testEventHandler.events.size() == 4
+        testEventHandler.events == eventNames
     }
 
     void 'Connect to default dataSource'() {
@@ -131,12 +158,12 @@ class DataSourceSpec extends Specification {
             Sql sql = new Sql(dataSource)
             def people = sql.dataSet('people')
             [[id: 1, name: 'Danno', lastname: 'Ferrin'],
-                [id: 2, name: 'Andres', lastname: 'Almiray'],
-                [id: 3, name: 'James', lastname: 'Williams'],
-                [id: 4, name: 'Guillaume', lastname: 'Laforge'],
-                [id: 5, name: 'Jim', lastname: 'Shingler'],
-                [id: 6, name: 'Alexander', lastname: 'Klein'],
-                [id: 7, name: 'Rene', lastname: 'Groeschke']].each { data ->
+             [id: 2, name: 'Andres', lastname: 'Almiray'],
+             [id: 3, name: 'James', lastname: 'Williams'],
+             [id: 4, name: 'Guillaume', lastname: 'Laforge'],
+             [id: 5, name: 'Jim', lastname: 'Shingler'],
+             [id: 6, name: 'Alexander', lastname: 'Klein'],
+             [id: 7, name: 'Rene', lastname: 'Groeschke']].each { data ->
                 people.add(data)
             }
         }
@@ -145,9 +172,9 @@ class DataSourceSpec extends Specification {
             Sql sql = new Sql(dataSource)
             List list = []
             sql.eachRow('SELECT * FROM people') {
-                list << [id: it.id,
-                    name: it.name,
-                    lastname: it.lastname]
+                list << [id      : it.id,
+                         name    : it.name,
+                         lastname: it.lastname]
             }
             list
         }

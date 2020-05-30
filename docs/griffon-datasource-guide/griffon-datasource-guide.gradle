@@ -15,17 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-config {
-    info {
-        name          = projectDescription
-        description   = projectDescription
-        inceptionYear = '2014'
-        tags          = ['griffon', 'plugin', 'datasource']
-    }
+ext.projectDependencies = [
+    ':griffon-datasource-core',
+    ':griffon-datasource-groovy-compile'
+]
 
-    coverage {
-        jacoco {
-            toolVersion = jacocoVersion
-        }
-    }
-}
+ext.projectDependencies.each { evaluationDependsOn it }
