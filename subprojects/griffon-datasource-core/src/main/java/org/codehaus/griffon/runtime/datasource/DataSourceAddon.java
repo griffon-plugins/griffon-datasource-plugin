@@ -21,6 +21,7 @@ import griffon.annotations.core.Nonnull;
 import griffon.annotations.inject.DependsOn;
 import griffon.core.GriffonApplication;
 import griffon.core.env.Metadata;
+import griffon.core.events.StartupStartEvent;
 import griffon.plugins.datasource.ConnectionCallback;
 import griffon.plugins.datasource.DataSourceFactory;
 import griffon.plugins.datasource.DataSourceHandler;
@@ -29,6 +30,7 @@ import griffon.plugins.monitor.MBeanManager;
 import org.codehaus.griffon.runtime.core.addon.AbstractGriffonAddon;
 import org.codehaus.griffon.runtime.datasource.monitor.DataSourceStorageMonitor;
 
+import javax.application.event.EventHandler;
 import javax.inject.Inject;
 import javax.inject.Named;
 import java.util.Map;
@@ -62,7 +64,8 @@ public class DataSourceAddon extends AbstractGriffonAddon {
         mbeanManager.registerMBean(new DataSourceStorageMonitor(metadata, dataSourceStorage));
     }
 
-    public void onStartupStart(@Nonnull GriffonApplication application) {
+    @EventHandler
+    public void handleStartupStartEvent(@Nonnull StartupStartEvent event) {
         for (String dataSourceName : dataSourceFactory.getDataSourceNames()) {
             Map<String, Object> config = dataSourceFactory.getConfigurationFor(dataSourceName);
             if (getConfigValueAsBoolean(config, "connect_on_startup", false)) {
@@ -71,7 +74,8 @@ public class DataSourceAddon extends AbstractGriffonAddon {
         }
     }
 
-    public void onShutdownStart(@Nonnull GriffonApplication application) {
+    @Override
+    public void onShutdown(@Nonnull GriffonApplication application) {
         for (String dataSourceName : dataSourceFactory.getDataSourceNames()) {
             dataSourceHandler.closeDataSource(dataSourceName);
         }

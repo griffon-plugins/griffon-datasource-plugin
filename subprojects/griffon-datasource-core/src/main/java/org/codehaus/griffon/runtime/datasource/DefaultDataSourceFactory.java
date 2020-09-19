@@ -160,6 +160,7 @@ public class DefaultDataSourceFactory extends AbstractObjectFactory<DataSource> 
         for (String objectName : dataSource.getObjectNames()) {
             mBeanManager.unregisterMBean(objectName);
         }
+        dataSource.clearObjectNames();
     }
 
     @Nonnull

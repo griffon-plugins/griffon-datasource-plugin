@@ -50,4 +50,8 @@ public class JMXAwareDataSource extends DataSourceDecorator {
     public Set<String> getObjectNames() {
         return Collections.unmodifiableSet(objectNames);
     }
+
+    public void clearObjectNames(){
+        objectNames.clear();
+    }
 }
