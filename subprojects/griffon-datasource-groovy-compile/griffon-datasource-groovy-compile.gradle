@@ -25,3 +25,9 @@ dependencies {
 
     annotationProcessor"org.codehaus.griffon:griffon-core-compile:${griffonVersion}"
 }
+
+jar {
+    manifest {
+        attributes('Automatic-Module-Name': project.group + '.datasource.groovy.compile')
+    }
+}

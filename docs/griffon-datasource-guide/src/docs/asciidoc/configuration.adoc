@@ -29,7 +29,7 @@ You will need to configure any of the following blocks depending on your setup
 [subs="attributes"]
 ----
 dependencies {
-    compile '{project-group}:griffon-datasource-core:{project-version}'
+    api '{project-group}:griffon-datasource-core:{project-version}'
 }
 ----
 
@@ -81,6 +81,7 @@ Next configure dependencies as required by your particular setup
 <dependency>
     <groupId>{project-group}</groupId>
     <artifactId>griffon-datasource-groovy-compile</artifactId>
+    <scope>provided</scope>
 </dependency>
 ----
 
