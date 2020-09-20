@@ -36,11 +36,10 @@ The following properties are optional
 
 [cols="4*",options="header"]
 |===
-
 | Property           | Type    | Default | Description
 | connect_on_startup | boolean | false   | Establishes a connection to the datasource at the beginning of the `Startup` phase.
 | jmx                | boolean | true    | Expose the connection pool using JMX.
-
+| pooled             | boolean | true    | Whether to use Hikari as connection pool or not.
 |===
 
 The plugin's <<_modules, module>> registers a `{api_datasource_handler}` helper class that defines the base contract

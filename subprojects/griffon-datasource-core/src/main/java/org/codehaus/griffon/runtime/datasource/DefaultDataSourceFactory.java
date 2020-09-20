@@ -19,6 +19,7 @@ package org.codehaus.griffon.runtime.datasource;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import com.zaxxer.hikari.util.DriverDataSource;
 import griffon.annotations.core.Nonnull;
 import griffon.core.Configuration;
 import griffon.core.GriffonApplication;
@@ -47,6 +48,7 @@ import java.sql.Statement;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Scanner;
 import java.util.Set;
 
@@ -126,7 +128,7 @@ public class DefaultDataSourceFactory extends AbstractObjectFactory<DataSource> 
             processSchema(config, name, dataSource);
         }
 
-        if (getConfigValueAsBoolean(config, "jmx", true)) {
+        if (getConfigValueAsBoolean(config, "jmx", true) && getConfigValueAsBoolean(config, "pooled", true)) {
             dataSource = new JMXAwareDataSource(dataSource);
             registerMBeans(name, (JMXAwareDataSource) dataSource);
         }
@@ -144,7 +146,7 @@ public class DefaultDataSourceFactory extends AbstractObjectFactory<DataSource> 
 
         event(DataSourceDisconnectStartEvent.of(name, config, instance));
 
-        if (getConfigValueAsBoolean(config, "jmx", true)) {
+        if (getConfigValueAsBoolean(config, "jmx", true) && getConfigValueAsBoolean(config, "pooled", true)) {
             unregisterMBeans((JMXAwareDataSource) instance);
         }
 
@@ -179,16 +181,23 @@ public class DefaultDataSourceFactory extends AbstractObjectFactory<DataSource> 
 
         String username = getConfigValueAsString(config, "username", "");
         String password = getConfigValueAsString(config, "password", "");
+        boolean pooled = getConfigValueAsBoolean(config, "pooled", true);
 
-        HikariConfig hikariConfig = new HikariConfig();
-        hikariConfig.setJdbcUrl(url);
-        hikariConfig.setDriverClassName(driverClassName);
-        hikariConfig.setUsername(username);
-        hikariConfig.setPassword(password);
-        Map<String, Object> pool = getConfigValue(config, "pool", Collections.<String, Object>emptyMap());
-        GriffonClassUtils.setPropertiesNoException(hikariConfig, pool);
+        if (pooled) {
+            HikariConfig hikariConfig = new HikariConfig();
+            hikariConfig.setJdbcUrl(url);
+            hikariConfig.setDriverClassName(driverClassName);
+            hikariConfig.setUsername(username);
+            hikariConfig.setPassword(password);
+            Map<String, Object> pool = getConfigValue(config, "pool", Collections.<String, Object>emptyMap());
+            GriffonClassUtils.setPropertiesNoException(hikariConfig, pool);
 
-        return new HikariDataSource(hikariConfig);
+            return new HikariDataSource(hikariConfig);
+        }
+
+        Properties props = new Properties();
+        props.putAll(config);
+        return new DriverDataSource(url, driverClassName, props, username, password);
     }
 
     private void processSchema(@Nonnull Map<String, Object> config, @Nonnull String name, @Nonnull DataSource dataSource) {
