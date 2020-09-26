@@ -30,7 +30,8 @@ import java.util.ResourceBundle;
  */
 public class DefaultDataSourceConfiguration extends ResourceBundleConfiguration {
     @Inject
-    public DefaultDataSourceConfiguration(@Nonnull ConverterRegistry converterRegistry, @Nonnull @Named("datasource") ResourceBundle resourceBundle) {
+    public DefaultDataSourceConfiguration(@Nonnull ConverterRegistry converterRegistry,
+                                          @Nonnull @Named("datasource") ResourceBundle resourceBundle) {
         super(converterRegistry, resourceBundle);
     }
 }

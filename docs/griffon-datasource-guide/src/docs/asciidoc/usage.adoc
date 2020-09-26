@@ -63,13 +63,13 @@ with JDK8+ or closures if running Groovy.
 [source,java,options="nowrap"]
 .griffon.plugins.datasource.DataSourceCallback.java
 ----
-include::{path_griffon_datasource_core}/src/main/java/griffon/plugins/datasource/DataSourceCallback.java[lines=25..-1]
+include::{path_griffon_datasource_core}/src/main/java/griffon/plugins/datasource/DataSourceCallback.java[lines=27..-1]
 ----
 
 [source,java,options="nowrap"]
 .griffon.plugins.datasource.ConnectionCallback.java
 ----
-include::{path_griffon_datasource_core}/src/main/java/griffon/plugins/datasource/ConnectionCallback.java[lines=26..-1]
+include::{path_griffon_datasource_core}/src/main/java/griffon/plugins/datasource/ConnectionCallback.java[lines=28..-1]
 ----
 
 == Example
@@ -83,7 +83,6 @@ inside a Java service
 package com.acme;
 
 import griffon.core.artifact.GriffonService;
-import griffon.metadata.ArtifactProviderFor;
 import org.codehaus.griffon.runtime.core.artifact.AbstractGriffonService;
 
 import griffon.plugins.datasource.DataSourceHandler;
@@ -94,11 +93,12 @@ import java.sql.SQLException;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.util.StringMapper;
+import org.kordamp.jipsy.ServiceProviderFor;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 
-@ArtifactProviderFor(GriffonService.class)
+@ServiceProviderFor(GriffonService.class)
 public class SampleService extends AbstractGriffonService {
     @Inject
     private DataSourceHandler dataSourceHandler;
@@ -126,7 +126,6 @@ Here's the Groovy version of it
 package com.acme
 
 import griffon.core.artifact.GriffonService
-import griffon.metadata.ArtifactProviderFor
 
 import griffon.plugins.datasource.DataSourceHandler
 import javax.sql.DataSource
@@ -134,10 +133,11 @@ import javax.sql.DataSource
 import org.skife.jdbi.v2.DBI
 import org.skife.jdbi.v2.Handle
 import org.skife.jdbi.v2.util.StringMapper
+import org.kordamp.jipsy.ServiceProviderFor
 
 import javax.inject.Inject
 
-@ArtifactProviderFor(GriffonService)
+@ServiceProviderFor(GriffonService)
 class SampleService {
     @Inject
     private DataSourceHandler dataSourceHandler
@@ -159,10 +159,10 @@ class SampleService {
 
 The following events will be triggered by `{api_datasource_handler}`
 
-DataSourceConnectStart(String dataSourceName, Map<String, Object> config):: Triggered before connecting to the dataSource.
-DataSourceConnectEnd(String dataSourceName, Map<String, Object> config, DataSource dataSource):: Triggered after connecting to the dataSource.
-DataSourceDisconnectStart(String dataSourceName, Map<String, Object> config, DataSource dataSource):: Triggered before disconnecting from the dataSource.
-DataSourceDisconnectEnd(String dataSourceName, Map<String, Object> config):: Triggered after disconnecting from the dataSource.
+DataSourceConnectStartEvent(String dataSourceName, Map<String, Object> config):: Triggered before connecting to the dataSource.
+DataSourceConnectEndEvent(String dataSourceName, Map<String, Object> config, DataSource dataSource):: Triggered after connecting to the dataSource.
+DataSourceDisconnectStartEvent(String dataSourceName, Map<String, Object> config, DataSource dataSource):: Triggered before disconnecting from the dataSource.
+DataSourceDisconnectEndEvent(String dataSourceName, Map<String, Object> config):: Triggered after disconnecting from the dataSource.
 
 == AST Transformation
 
@@ -175,7 +175,6 @@ into said class. The previous Groovy service example can be rewritten as follows
 package com.acme
 
 import griffon.core.artifact.GriffonService
-import griffon.metadata.ArtifactProviderFor
 import griffon.transform.DataSourceAware
 
 import javax.sql.DataSource
@@ -183,11 +182,12 @@ import javax.sql.DataSource
 import org.skife.jdbi.v2.DBI
 import org.skife.jdbi.v2.Handle
 import org.skife.jdbi.v2.util.StringMapper
+import org.kordamp.jipsy.ServiceProviderFor
 
 import javax.inject.Inject
 
 @DataSourceAware
-@ArtifactProviderFor(GriffonService)
+@ServiceProviderFor(GriffonService)
 class SampleService {
     String getPersonName(long id) {
          withDataSource { String dataSourceName, DataSource dataSource ->
